@@ -58,7 +58,7 @@
     font-size: 11px;
     color: #ffffff;
     text-shadow: 2px 2px #000000;
-    z-index: 10;
+    z-index: 20;
     border-bottom: 3px solid #000;
   }
 
@@ -77,18 +77,14 @@
 
   #battle-stage {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
     position: relative;
-    padding: 10px 16px 0;
+    width: 100%;
     overflow: hidden;
   }
 
   .clouds-layer {
     position: absolute;
-    top: 25px;
+    top: 20px;
     left: 0;
     width: 200%;
     height: 45px;
@@ -107,24 +103,26 @@
 
   .hills-layer {
     position: absolute;
-    bottom: 32px;
+    bottom: 36px;
     width: 100%;
-    height: 90px;
+    height: 100px;
     z-index: 2;
     pointer-events: none;
   }
 
   .question-block {
+    position: absolute;
+    top: 15px;
+    left: 5%;
+    width: 90%;
     background: #fcb040;
     border: 4px solid #000000;
     box-shadow: inset -4px -4px 0 #8c4000, inset 4px 4px 0 #ffe0a0, 0 5px 0 rgba(0,0,0,0.4);
-    padding: 10px 14px;
+    padding: 12px 10px;
     border-radius: 10px;
     text-align: center;
-    margin-top: 4px;
     animation: floatBlock 2.2s infinite ease-in-out;
-    z-index: 5;
-    width: 96%;
+    z-index: 15;
   }
   @keyframes floatBlock {
     0%, 100% { transform: translateY(0); }
@@ -137,23 +135,65 @@
     font-weight: 900;
   }
 
-  .arena {
+  /* 地面與水管 */
+  .ground {
+    position: absolute;
+    bottom: 0;
+    left: 0;
     width: 100%;
-    height: 190px;
-    position: relative;
-    margin-bottom: -4px;
-    z-index: 6;
+    height: 38px;
+    background: repeating-linear-gradient(
+      45deg,
+      #c84c0c, #c84c0c 12px,
+      #000 12px, #000 14px,
+      #fc9838 14px, #fc9838 24px
+    );
+    border-top: 4px solid #000;
+    z-index: 10;
   }
 
-  .sprite-box {
+  .pipe {
     position: absolute;
-    bottom: 0px;
-    width: 80px;
-    height: 95px;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    filter: drop-shadow(3px 4px 0 rgba(0,0,0,0.3));
+    right: 25px;
+    bottom: 38px;
+    width: 86px;
+    height: 56px;
+    background: #00a800;
+    border: 4px solid #000;
+    box-shadow: inset 6px 0 0 #54f054, inset -6px 0 0 #005400;
+    z-index: 9;
+  }
+  .pipe::before {
+    content: '';
+    position: absolute;
+    top: -16px;
+    left: -5px;
+    width: 88px;
+    height: 16px;
+    background: #00a800;
+    border: 4px solid #000;
+    box-shadow: inset 6px 0 0 #54f054, inset -6px 0 0 #005400;
+  }
+
+  /* 角色定位：精確貼在地面與水管上 */
+  #player-box {
+    position: absolute;
+    left: 30px;
+    bottom: 38px;
+    width: 76px;
+    height: 90px;
+    z-index: 12;
+    transform-origin: bottom center;
+  }
+
+  #enemy-box {
+    position: absolute;
+    right: 34px;
+    bottom: 94px; /* 對準水管口上方 */
+    width: 68px;
+    height: 68px;
+    z-index: 8; /* 在水管後方升起 */
+    transform-origin: bottom center;
   }
 
   .idle-anim {
@@ -161,54 +201,45 @@
   }
   @keyframes idleBounce {
     0% { transform: translateY(0); }
-    100% { transform: translateY(-5px); }
+    100% { transform: translateY(-4px); }
   }
 
-  #player-box { left: 24px; z-index: 15; }
-  
-  /* 栗寶寶怪物定位：精準對準大水管中心 */
-  #enemy-box {
-    right: 28px;
-    bottom: 60px;
-    z-index: 7;
-    transform-origin: bottom center;
-  }
-
-  /* 香菇從水管深處由下往上升起的自然動畫 */
+  /* 香菇從水管由下往上升起動畫 */
   .enemy-emerge-anim {
-    animation: pipeEmerge 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation: pipeEmerge 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
   }
   @keyframes pipeEmerge {
-    0% { transform: translateY(75px); opacity: 0; }
-    20% { opacity: 1; }
+    0% { transform: translateY(60px); opacity: 0; }
+    30% { opacity: 1; }
     100% { transform: translateY(0); opacity: 1; }
   }
 
-  /* 瑪利歐拋物線起跳、踩踏並跳回原位 */
+  /* 瑪利歐跳躍踩踏 */
   .player-stomp-anim {
     animation: heroJumpStomp 0.85s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important;
   }
   @keyframes heroJumpStomp {
     0% { transform: translate3d(0, 0, 0); }
-    30% { transform: translate3d(130px, -150px, 0) rotate(-10deg); }
-    55% { transform: translate3d(245px, -65px, 0) scaleY(0.85); }
-    70% { transform: translate3d(245px, -105px, 0); }
+    30% { transform: translate3d(120px, -130px, 0) rotate(-10deg); }
+    55% { transform: translate3d(240px, -65px, 0) scaleY(0.85); }
+    70% { transform: translate3d(240px, -95px, 0); }
     100% { transform: translate3d(0, 0, 0); }
   }
 
+  /* 香菇被踩扁（變半扁並沉入水管） */
   .enemy-squished {
-    animation: squishAnim 0.4s ease forwards !important;
+    animation: squishAnim 0.45s ease forwards !important;
   }
   @keyframes squishAnim {
     0% { transform: scale(1, 1) translateY(0); }
-    40% { transform: scale(1.3, 0.2) translateY(25px); opacity: 0.9; }
-    100% { transform: scale(1.4, 0.05) translateY(60px); opacity: 0; }
+    40% { transform: scale(1.3, 0.2) translateY(18px); opacity: 1; }
+    100% { transform: scale(1.4, 0.05) translateY(45px); opacity: 0; }
   }
 
   .hit-spark {
     position: absolute;
-    right: 40px;
-    bottom: 70px;
+    right: 35px;
+    bottom: 100px;
     width: 60px;
     height: 60px;
     pointer-events: none;
@@ -218,44 +249,6 @@
   @keyframes hitPop {
     0% { transform: scale(0.2) rotate(0deg); opacity: 1; }
     100% { transform: scale(1.5) rotate(45deg); opacity: 0; }
-  }
-
-  /* 水管結構重新等比例加寬與加厚 */
-  .scenery-ground { width: 100%; position: relative; z-index: 8; }
-  .pipe {
-    position: absolute;
-    right: 20px;
-    bottom: 0;
-    width: 88px;
-    height: 70px;
-    background: #00a800;
-    border: 4px solid #000;
-    box-shadow: inset 6px 0 0 #54f054, inset -6px 0 0 #005400;
-    z-index: 9;
-  }
-  .pipe::before {
-    content: '';
-    position: absolute;
-    top: -18px;
-    left: -6px;
-    width: 92px;
-    height: 18px;
-    background: #00a800;
-    border: 4px solid #000;
-    box-shadow: inset 6px 0 0 #54f054, inset -6px 0 0 #005400;
-  }
-  .ground {
-    width: 100%;
-    height: 32px;
-    background: repeating-linear-gradient(
-      45deg,
-      #c84c0c, #c84c0c 12px,
-      #000 12px, #000 14px,
-      #fc9838 14px, #fc9838 24px
-    );
-    border-top: 4px solid #000;
-    position: relative;
-    z-index: 10;
   }
 
   #options-grid {
@@ -365,11 +358,11 @@
   <div id="battle-stage">
     <div class="clouds-layer"></div>
     <div class="hills-layer">
-      <svg width="100%" height="100%" viewBox="0 0 400 90" preserveAspectRatio="none">
-        <ellipse cx="60" cy="90" rx="90" ry="60" fill="#008800" stroke="#000" stroke-width="3"/>
-        <ellipse cx="280" cy="90" rx="120" ry="70" fill="#00a800" stroke="#000" stroke-width="3"/>
-        <ellipse cx="160" cy="90" rx="35" ry="25" fill="#54f054" stroke="#000" stroke-width="2.5"/>
-        <ellipse cx="370" cy="90" rx="40" ry="28" fill="#54f054" stroke="#000" stroke-width="2.5"/>
+      <svg width="100%" height="100%" viewBox="0 0 400 100" preserveAspectRatio="none">
+        <ellipse cx="60" cy="100" rx="90" ry="60" fill="#008800" stroke="#000" stroke-width="3"/>
+        <ellipse cx="280" cy="100" rx="120" ry="70" fill="#00a800" stroke="#000" stroke-width="3"/>
+        <ellipse cx="160" cy="100" rx="35" ry="25" fill="#54f054" stroke="#000" stroke-width="2.5"/>
+        <ellipse cx="370" cy="100" rx="40" ry="28" fill="#54f054" stroke="#000" stroke-width="2.5"/>
       </svg>
     </div>
 
@@ -377,15 +370,12 @@
       <div class="q-math" id="q-text">-- + --</div>
     </div>
 
-    <div class="arena">
-      <div class="sprite-box idle-anim" id="player-box"></div>
-      <div class="sprite-box" id="enemy-box"></div>
-    </div>
+    <!-- 角色與香菇精準定位在地面與水管上 -->
+    <div class="sprite-box idle-anim" id="player-box"></div>
+    <div class="sprite-box" id="enemy-box"></div>
 
-    <div class="scenery-ground">
-      <div class="pipe"></div>
-      <div class="ground"></div>
-    </div>
+    <div class="pipe"></div>
+    <div class="ground"></div>
   </div>
 
   <div id="options-grid">
@@ -456,7 +446,7 @@
     `,
     spark: `
       <svg viewBox="0 0 100 100" width="100%" height="100%">
-        <polygon points="50,0 60,35 95,50 60,65 50,100 40,65 50,100 40,65 5,50 40,35" fill="#fde047" stroke="#ffffff" stroke-width="4"/>
+        <polygon points="50,0 60,35 95,50 60,65 50,100 40,65 5,50 40,35" fill="#fde047" stroke="#ffffff" stroke-width="4"/>
       </svg>
     `
   };
@@ -586,11 +576,10 @@
     isActionLocked = false;
     roundCount.textContent = `${currentRound}`;
     
-    // 確保瑪利歐重置回起點待機狀態
     playerBox.classList.remove('player-stomp-anim');
     playerBox.classList.add('idle-anim');
 
-    // 觸發香菇從水管升起
+    // 觸發香菇從水管由下往上升起動畫
     enemyBox.classList.remove('enemy-squished', 'idle-anim', 'enemy-emerge-anim');
     setTimeout(() => {
       enemyBox.classList.add('enemy-emerge-anim');
@@ -602,7 +591,7 @@
         enemyBox.classList.remove('enemy-emerge-anim');
         enemyBox.classList.add('idle-anim');
       }
-    }, 780);
+    }, 820);
 
     let a = 0, b = 0, maxRange = 10;
 
@@ -698,7 +687,7 @@
       playerBox.classList.remove('idle-anim');
       playerBox.classList.add('player-stomp-anim');
 
-      // 踩中打擊反饋
+      // 踩擊打擊反饋
       setTimeout(() => {
         sndStomp();
         sndCoin();
@@ -717,12 +706,12 @@
         fx.className = 'coin-fx';
         fx.textContent = `🪙 +${reward}`;
         fx.style.right = '45px';
-        fx.style.bottom = '95px';
+        fx.style.bottom = '110px';
         document.getElementById('battle-stage').appendChild(fx);
         setTimeout(() => fx.remove(), 650);
       }, 450);
 
-      // 修正：等待瑪利歐跳回起點後，再判定是否通關或進入下一題
+      // 跳回起點後再判定結算或下一關
       setTimeout(() => {
         playerBox.classList.remove('player-stomp-anim');
         playerBox.classList.add('idle-anim');
