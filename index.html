@@ -359,7 +359,6 @@
     100% { transform: scale(1.4) rotate(45deg); opacity: 0; }
   }
 
-  /* 🎆 煙火與鞭炮粒子動畫 */
   .firework-particle {
     position: absolute;
     width: 7px;
@@ -687,6 +686,12 @@
   bossAudio.loop = true;
   bossAudio.volume = 0.6;
 
+  const bowserDieAudio = new Audio('bowser_die.mp3');
+  bowserDieAudio.volume = 0.8;
+
+  const winAudio = new Audio('win.mp3');
+  winAudio.volume = 0.85;
+
   const gameOverAudio = new Audio('gameover.mp3');
   gameOverAudio.volume = 0.75;
 
@@ -978,7 +983,6 @@
     }
   }
 
-  /* 🎆 煙火與鞭炮綻放特效函式 */
   function spawnFirework(x, y) {
     sndFirework();
     const stage = document.getElementById('battle-stage');
@@ -1071,6 +1075,11 @@
           if (bossHp <= 0) {
             enemyBox.classList.remove('idle-anim', 'enemy-emerge-anim');
             enemyBox.classList.add('enemy-squished');
+            
+            // 💥 播放庫巴被擊敗落水音效 (Bowser Die)
+            bossAudio.pause();
+            bowserDieAudio.currentTime = 0;
+            bowserDieAudio.play().catch(e => console.log('庫巴落水音效播放'));
           }
         } else {
           enemyBox.classList.remove('idle-anim', 'enemy-emerge-anim');
@@ -1240,7 +1249,7 @@
     alert("🎉 購買成功！道具已生效！");
   }
 
-  /* ================= 結束結算、放煙火與回到主畫面 ================= */
+  /* ================= 結束結算、通關音樂、放煙火與回到主畫面 ================= */
   function endBattle(isWin) {
     clearInterval(timerInterval);
     isActionLocked = true;
@@ -1253,16 +1262,23 @@
     }
 
     if (isWin) {
-      // 觸發連環煙火與鞭炮特效
+      // 停止背景音樂並播放 Flagpole 勝利通關音效
+      bossAudio.pause();
+      bgmAudio.pause();
+      winAudio.currentTime = 0;
+      winAudio.play().catch(e => console.log('通關音效待互動'));
+
+      // 觸發連環煙火特效
       launchVictoryFireworks();
     }
 
-    // 獲勝停留 3.8 秒放完煙火，失敗停留 2 秒
-    const delayTime = isWin ? 3800 : 2000;
+    // 獲勝停留 4 秒讓通關音樂與煙火播完，失敗停留 2 秒
+    const delayTime = isWin ? 4000 : 2000;
 
     setTimeout(() => {
       bgmAudio.pause();
       bossAudio.pause();
+      winAudio.pause();
       appEl.classList.remove('boss-theme');
       showDifficultyMenu();
     }, delayTime);
