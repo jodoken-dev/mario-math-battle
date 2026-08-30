@@ -346,7 +346,6 @@
     100% { transform: translate3d(0, 0, 0); opacity: 1; filter: brightness(1); }
   }
 
-  /* 💀 經典傳統瑪利歐陣亡動作：跳起後垂直跌出畫面深淵 */
   .player-die-anim {
     z-index: 99 !important;
     animation: classicMarioDeath 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
@@ -436,29 +435,36 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 16px 20px;
+    padding: 14px 18px;
     z-index: 50;
     text-align: center;
   }
 
   .modal-title {
-    font-size: 22px;
+    font-size: 21px;
     font-weight: 700;
     color: #fde047;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     text-shadow: 2px 2px #c2410c;
     letter-spacing: 1px;
   }
   .modal-desc {
-    font-size: 13px;
+    font-size: 12px;
     color: #cbd5e1;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     font-weight: 700;
+  }
+
+  .menu-scroll-area {
+    width: 100%;
+    max-height: 480px;
+    overflow-y: auto;
+    padding-right: 4px;
   }
 
   .mode-group-title {
     width: 100%;
-    font-size: 14px;
+    font-size: 13px;
     color: #38bdf8;
     text-align: left;
     margin: 6px 0 4px;
@@ -472,11 +478,11 @@
     box-shadow: inset -2px -2px 0 #0369a1, inset 2px 2px 0 #38bdf8, 0 3px 0 #000;
     color: #ffffff;
     font-family: inherit;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
-    padding: 10px 8px;
+    padding: 8px 6px;
     border-radius: 12px;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
     cursor: pointer;
     text-align: center;
   }
@@ -484,6 +490,10 @@
   .mode-btn.mul {
     background: #059669;
     box-shadow: inset -2px -2px 0 #047857, inset 2px 2px 0 #34d399, 0 3px 0 #000;
+  }
+  .mode-btn.div {
+    background: #d97706;
+    box-shadow: inset -2px -2px 0 #b45309, inset 2px 2px 0 #fbbf24, 0 3px 0 #000;
   }
 
   .shop-scroll-list {
@@ -582,15 +592,21 @@
     <h1 class="modal-title">🍄 瑪利歐數學大冒險</h1>
     <p class="modal-desc">請小朋友選擇關卡難度：</p>
     
-    <div class="mode-group-title">➕ ➖ 加法與減法挑戰</div>
-    <button class="mode-btn" onclick="startBattle('10')">🍄 10 以內加減法</button>
-    <button class="mode-btn" onclick="startBattle('100')">⭐ 100 以內加減法</button>
-    <button class="mode-btn" onclick="startBattle('1000')">👑 1000 以內大冒險</button>
-    
-    <div class="mode-group-title">✖️ 九九乘法表挑戰</div>
-    <button class="mode-btn mul" onclick="startBattle('mul_2_5')">🌸 2 ~ 5 乘法表</button>
-    <button class="mode-btn mul" onclick="startBattle('mul_5_6')">⚡ 5 ~ 6 乘法表</button>
-    <button class="mode-btn mul" onclick="startBattle('mul_2_9')">🔥 2 ~ 9 乘法全挑戰</button>
+    <div class="menu-scroll-area">
+      <div class="mode-group-title">➕ ➖ 加法與減法挑戰</div>
+      <button class="mode-btn" onclick="startBattle('10')">🍄 10 以內加減法 (8秒)</button>
+      <button class="mode-btn" onclick="startBattle('100')">⭐ 100 以內加減法 (15秒)</button>
+      <button class="mode-btn" onclick="startBattle('1000')">👑 1000 以內大冒險 (25秒)</button>
+      
+      <div class="mode-group-title">✖️ 九九乘法表挑戰</div>
+      <button class="mode-btn mul" onclick="startBattle('mul_2_5')">🌸 2 ~ 5 乘法表 (8秒)</button>
+      <button class="mode-btn mul" onclick="startBattle('mul_5_6')">⚡ 5 ~ 6 乘法表 (8秒)</button>
+      <button class="mode-btn mul" onclick="startBattle('mul_2_9')">🔥 2 ~ 9 乘法全挑戰 (10秒)</button>
+
+      <div class="mode-group-title">➗ 除法大冒險 (九九乘法互逆)</div>
+      <button class="mode-btn div" onclick="startBattle('div_basic')">💎 2 ~ 5 基礎除法 (10秒)</button>
+      <button class="mode-btn div" onclick="startBattle('div_all')">⚡ 2 ~ 9 除法全挑戰 (12秒)</button>
+    </div>
   </div>
 
   <!-- 道具與角色商城 -->
@@ -822,10 +838,21 @@
     statusIndicator.innerHTML = html;
   }
 
-  /* ================= 計時器管理 ================= */
+  /* ================= 計時器管理（各難度時間配置） ================= */
+  function getBaseTimeForDifficulty(diff) {
+    switch (diff) {
+      case '1000': return 25;       // 1000以內：25秒
+      case '100': return 15;        // 100以內：15秒
+      case 'div_all': return 12;    // 除法全挑戰：12秒
+      case 'div_basic': return 10;  // 基礎除法：10秒
+      case 'mul_2_9': return 10;    // 乘法全挑戰：10秒
+      default: return 8;            // 10以內、基礎乘法：8秒
+    }
+  }
+
   function startTimer() {
     clearInterval(timerInterval);
-    maxTime = 8 + extraTimeAdded;
+    maxTime = getBaseTimeForDifficulty(currentDifficulty) + extraTimeAdded;
     timeLeft = maxTime;
     extraTimeAdded = 0;
     updateTimerUI();
@@ -926,6 +953,7 @@
     startTimer();
   }
 
+  /* 題目產生引擎 */
   function generateQuestion() {
     let a = 0, b = 0, maxRange = 10, isPlus = Math.random() > 0.45;
 
@@ -971,14 +999,30 @@
       correctAnswer = a * b;
       qText.textContent = `${a} × ${b} = ?`;
     }
+    else if (currentDifficulty === 'div_basic') {
+      const divisor = Math.floor(Math.random() * 4) + 2;
+      const quotient = Math.floor(Math.random() * 9) + 1;
+      const dividend = divisor * quotient;
+      maxRange = 9;
+      correctAnswer = quotient;
+      qText.textContent = `${dividend} ÷ ${divisor} = ?`;
+    }
+    else if (currentDifficulty === 'div_all') {
+      const divisor = Math.floor(Math.random() * 8) + 2;
+      const quotient = Math.floor(Math.random() * 9) + 1;
+      const dividend = divisor * quotient;
+      maxRange = 9;
+      correctAnswer = quotient;
+      qText.textContent = `${dividend} ÷ ${divisor} = ?`;
+    }
 
     const options = new Set([correctAnswer]);
     while (options.size < 4) {
       let offset = (Math.floor(Math.random() * 7) - 3);
       if (currentDifficulty === '1000') offset *= 10;
       const fake = correctAnswer + (offset === 0 ? 2 : offset);
-      if (fake >= 0 && fake <= maxRange) options.add(fake);
-      else options.add(Math.floor(Math.random() * maxRange));
+      if (fake >= 0 && fake <= (maxRange < 10 ? 9 : maxRange)) options.add(fake);
+      else options.add(Math.floor(Math.random() * (maxRange < 10 ? 9 : maxRange)) + 1);
     }
     const optionArr = Array.from(options).sort(() => Math.random() - 0.5);
 
@@ -1047,7 +1091,11 @@
       isActionLocked = true;
       comboCount++;
 
-      const baseRewards = { "10": 5, "100": 15, "1000": 50, "mul_2_5": 10, "mul_5_6": 15, "mul_2_9": 25 };
+      const baseRewards = { 
+        "10": 5, "100": 15, "1000": 50, 
+        "mul_2_5": 10, "mul_5_6": 15, "mul_2_9": 25,
+        "div_basic": 12, "div_all": 25
+      };
       let reward = baseRewards[currentDifficulty] || 10;
       
       if (comboCount > 1) reward += (comboCount * 2);
@@ -1148,7 +1196,6 @@
         updateLivesUI();
 
         if (lives <= 0) {
-          // 💀 經典瑪利歐陣亡：彈起後掉落深淵
           playerBox.classList.remove('idle-anim', 'player-hurt-anim');
           playerBox.classList.add('player-die-anim');
 
@@ -1276,7 +1323,6 @@
       launchVictoryFireworks();
     }
 
-    // 陣亡停留 2.8 秒讓跳起掉落動畫與 Game Over 音效完整播放
     const delayTime = isWin ? 3800 : 2800;
 
     setTimeout(() => {
@@ -1291,7 +1337,8 @@
   function saveScore(coins, mode, isWin) {
     const modeNames = {
       "10": "10加減", "100": "100加減", "1000": "1000加減",
-      "mul_2_5": "2-5乘法", "mul_5_6": "5-6乘法", "mul_2_9": "2-9乘法"
+      "mul_2_5": "2-5乘法", "mul_5_6": "5-6乘法", "mul_2_9": "2-9乘法",
+      "div_basic": "2-5除法", "div_all": "2-9除法"
     };
     const list = JSON.parse(localStorage.getItem('mario_lb') || '[]');
     list.unshift({
