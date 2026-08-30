@@ -413,7 +413,6 @@
   }
   .btn-option:active { transform: translateY(3px); box-shadow: none; }
   
-  /* 被提示排除的錯誤選項樣式 */
   .btn-option.eliminated {
     background: #475569 !important;
     color: #94a3b8 !important;
@@ -697,15 +696,25 @@
     spark: `<svg viewBox="0 0 100 100" width="100%" height="100%"><polygon points="50,0 60,35 95,50 60,65 50,100 40,65 5,50 40,35" fill="#fde047" stroke="#ffffff" stroke-width="4"/></svg>`
   };
 
-  /* ================= 狀態管理與系統變數 ================= */
-  let totalCoins = parseInt(localStorage.getItem('mario_total_coins') || '0', 10);
+  /* ================= 狀態管理與數值安全防呆 ================= */
+  let rawCoins = parseInt(localStorage.getItem('mario_total_coins'), 10);
+  // 若原本為 NaN 或損壞，自動修正為 100 金幣
+  let totalCoins = (Number.isFinite(rawCoins) && rawCoins >= 0) ? rawCoins : 100;
+  localStorage.setItem('mario_total_coins', totalCoins);
+
   let unlockedSkins = JSON.parse(localStorage.getItem('mario_unlocked_skins') || '["mario"]');
   let currentSkin = localStorage.getItem('mario_current_skin') || 'mario';
 
-  let shieldCount = 0;      // 護盾累積層數
-  let starTurnsLeft = 0;    // 3倍金幣剩餘題數
-  let extraTimeAdded = 0;   // 下一題累積額外秒數
-  let hintCount = 0;        // 智慧提示剩餘次數
+  let rawShield = parseInt(localStorage.getItem('mario_shield_count'), 10);
+  let shieldCount = Number.isFinite(rawShield) && rawShield >= 0 ? rawShield : 0;
+
+  let rawStar = parseInt(localStorage.getItem('mario_star_turns'), 10);
+  let starTurnsLeft = Number.isFinite(rawStar) && rawStar >= 0 ? rawStar : 0;
+
+  let rawHint = parseInt(localStorage.getItem('mario_hint_count'), 10);
+  let hintCount = Number.isFinite(rawHint) && rawHint >= 0 ? rawHint : 0;
+
+  let extraTimeAdded = 0;
 
   let currentDifficulty = '10';
   let currentRound = 1;
@@ -894,6 +903,7 @@
 
   /* ================= 遊戲核心邏輯 ================= */
   function updateCoinUI() {
+    if (!Number.isFinite(totalCoins) || totalCoins < 0) totalCoins = 0;
     coinTotalEl.textContent = `${totalCoins}`;
   }
 
@@ -1041,7 +1051,6 @@
     }
     const optionArr = Array.from(options).sort(() => Math.random() - 0.5);
 
-    // 重設按鈕狀態與數值
     for (let i = 0; i < 4; i++) {
       const btn = document.getElementById(`opt-${i}`);
       btn.textContent = optionArr[i];
@@ -1050,9 +1059,9 @@
       btn.disabled = false;
     }
 
-    // 💡 智慧提示生效判定：排除 2 個錯誤選項
     if (hintCount > 0) {
       hintCount--;
+      localStorage.setItem('mario_hint_count', hintCount);
       updateStatusBadges();
       
       const wrongIndices = [];
@@ -1062,7 +1071,6 @@
         }
       }
       
-      // 隨機選 2 個錯誤選項進行排除
       wrongIndices.sort(() => Math.random() - 0.5);
       const toEliminate = wrongIndices.slice(0, 2);
       
@@ -1144,9 +1152,10 @@
       if (starTurnsLeft > 0) {
         reward *= 3;
         starTurnsLeft--;
+        localStorage.setItem('mario_star_turns', starTurnsLeft);
       }
 
-      totalCoins += reward;
+      totalCoins = (Number.isFinite(totalCoins) ? totalCoins : 0) + reward;
       localStorage.setItem('mario_total_coins', totalCoins);
       updateCoinUI();
       updateStatusBadges();
@@ -1225,6 +1234,7 @@
 
         if (shieldCount > 0) {
           shieldCount--;
+          localStorage.setItem('mario_shield_count', shieldCount);
           updateStatusBadges();
           sndPowerUp();
           playerBox.classList.remove('idle-anim');
@@ -1260,9 +1270,10 @@
     appEl.classList.add('screen-shake');
   }
 
-  /* ================= 多角色與連續購買商城系統 ================= */
+  /* ================= 多角色與連續購買商城系統（嚴格防呆） ================= */
   function openShop() {
     clearInterval(timerInterval);
+    if (!Number.isFinite(totalCoins) || totalCoins < 0) totalCoins = 0;
     document.getElementById('shop-coin-display').textContent = totalCoins;
     refreshShopUI();
     shopModal.style.display = 'flex';
@@ -1308,7 +1319,7 @@
   }
 
   function buySkin(skinId, price) {
-    if (totalCoins < price) {
+    if (!Number.isFinite(totalCoins) || totalCoins < price) {
       alert("🪙 金幣不夠喔！多答對題目賺取金幣吧！");
       return;
     }
@@ -1331,8 +1342,9 @@
     if (!isActionLocked && modalBox.style.display === 'none') startTimer();
   }
 
+  /* 道具購買：嚴格 NaN 防呆與扣款 */
   function buyItem(type, price) {
-    if (totalCoins < price) {
+    if (!Number.isFinite(totalCoins) || totalCoins < price) {
       alert("🪙 金幣不夠喔！多答對題目賺取金幣吧！");
       return;
     }
@@ -1344,12 +1356,15 @@
 
     if (type === 'shield') {
       shieldCount++;
+      localStorage.setItem('mario_shield_count', shieldCount);
     } else if (type === 'star') {
       starTurnsLeft++;
+      localStorage.setItem('mario_star_turns', starTurnsLeft);
     } else if (type === 'clock') {
       extraTimeAdded += 5;
     } else if (type === 'hint') {
       hintCount++;
+      localStorage.setItem('mario_hint_count', hintCount);
     }
 
     updateStatusBadges();
@@ -1397,7 +1412,7 @@
     const list = JSON.parse(localStorage.getItem('mario_lb') || '[]');
     list.unshift({
       mode: modeNames[mode] || "冒險",
-      coins: coins,
+      coins: Number.isFinite(coins) ? coins : 0,
       status: isWin ? "通關 🏆" : "挑戰 💥"
     });
     localStorage.setItem('mario_lb', JSON.stringify(list.slice(0, 10)));
