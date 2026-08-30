@@ -195,7 +195,7 @@
     z-index: 26;
   }
   .boss-label { font-size: 11px; color: #ef4444; font-weight: 700; margin-bottom: 2px; text-shadow: 1px 1px #000; }
-  .boss-hearts { font-size: 14px; }
+  .boss-hearts { font-size: 14px; letter-spacing: 1px; }
 
   .ground {
     position: absolute;
@@ -242,7 +242,6 @@
     box-shadow: inset 6px 0 0 #64748b, inset -6px 0 0 #0f172a;
   }
 
-  /* 角色圖片容器 */
   #player-box {
     position: absolute;
     left: 28px;
@@ -269,7 +268,7 @@
     bottom: 96px;
     width: 82px;
     height: 82px;
-    z-index: 8;
+    z-index: 12;
     transform-origin: bottom center;
     display: flex;
     justify-content: center;
@@ -324,10 +323,31 @@
     100% { transform: scale(1.5, 0.05) translateY(65px); opacity: 0; }
   }
 
+  .enemy-attack-anim {
+    animation: enemyChargeAttack 0.82s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+  }
+  @keyframes enemyChargeAttack {
+    0% { transform: translate3d(0, 0, 0) scale(1, 1); }
+    20% { transform: translate3d(20px, -15px, 0) scale(1.1, 0.9) rotate(8deg); }
+    50% { transform: translate3d(-240px, 40px, 0) scale(1.2, 1.1) rotate(-15deg); }
+    70% { transform: translate3d(-210px, 15px, 0) scale(1.05, 0.95) rotate(-5deg); }
+    100% { transform: translate3d(0, 0, 0) scale(1, 1); }
+  }
+
+  .player-hurt-anim {
+    animation: playerKnockbackHurt 0.8s ease-out forwards !important;
+  }
+  @keyframes playerKnockbackHurt {
+    0% { transform: translate3d(0, 0, 0); opacity: 1; filter: brightness(1); }
+    15% { transform: translate3d(-25px, -20px, 0) rotate(-18deg); opacity: 0.4; filter: brightness(2) drop-shadow(0 0 8px #ef4444); }
+    30% { transform: translate3d(-35px, 0, 0) rotate(-10deg); opacity: 0.9; }
+    50% { transform: translate3d(-20px, -10px, 0); opacity: 0.3; }
+    70% { transform: translate3d(-10px, 0, 0); opacity: 0.8; }
+    100% { transform: translate3d(0, 0, 0); opacity: 1; filter: brightness(1); }
+  }
+
   .hit-spark {
     position: absolute;
-    right: 42px;
-    bottom: 105px;
     width: 65px;
     height: 65px;
     pointer-events: none;
@@ -512,7 +532,7 @@
 
     <div id="boss-hp-wrap">
       <span class="boss-label">🔥 庫巴魔王 HP</span>
-      <span class="boss-hearts" id="boss-hearts">❤️❤️❤️</span>
+      <span class="boss-hearts" id="boss-hearts">❤️❤️❤️❤️❤️</span>
     </div>
 
     <div class="sprite-box idle-anim" id="player-box"></div>
@@ -551,7 +571,6 @@
     <p class="modal-desc">持有金幣：🪙 <span id="shop-coin-display">0</span></p>
     
     <div class="shop-scroll-list">
-      <!-- 戰鬥道具 -->
       <div class="shop-item-row">
         <div class="shop-item-info">🍄 超級蘑菇 (30 幣)<small>免死金牌：抵擋 1 次答錯扣血</small></div>
         <button class="shop-buy-btn" onclick="buyItem('shield', 30)">購買</button>
@@ -565,7 +584,6 @@
         <button class="shop-buy-btn" onclick="buyItem('clock', 20)">購買</button>
       </div>
 
-      <!-- 角色造型解鎖 -->
       <div class="shop-item-row">
         <div class="shop-item-info">🎽 瑪利歐 (預設)<small>經典冒險主角</small></div>
         <button class="shop-buy-btn" id="btn-skin-mario" onclick="selectSkin('mario')">使用中</button>
@@ -583,8 +601,12 @@
         <button class="shop-buy-btn" id="btn-skin-yoshi" onclick="buySkin('yoshi', 100)">解鎖 (100)</button>
       </div>
       <div class="shop-item-row">
-        <div class="shop-item-info">🐶 大耳狗喜拿 (150 幣)<small>超人氣隱藏特別嘉賓</small></div>
+        <div class="shop-item-info">🐶 大耳狗喜拿 (150 幣)<small>三麗鷗超人氣明星</small></div>
         <button class="shop-buy-btn" id="btn-skin-cinnamon" onclick="buySkin('cinnamon', 150)">解鎖 (150)</button>
+      </div>
+      <div class="shop-item-row">
+        <div class="shop-item-info">🐰 茉莉兔 (150 幣)<small>優雅可愛的粉紅小兔</small></div>
+        <button class="shop-buy-btn" id="btn-skin-marroncream" onclick="buySkin('marroncream', 150)">解鎖 (150)</button>
       </div>
     </div>
 
@@ -603,13 +625,13 @@
 </div>
 
 <script>
-  /* 支援本機上傳圖片 */
   const SPRITES = {
     mario: `<img src="mario.png" alt="Mario">`,
     luigi: `<img src="luigi.png" alt="Luigi">`,
     peach: `<img src="peach.png" alt="Peach">`,
     yoshi: `<img src="yoshi.png" alt="Yoshi">`,
     cinnamon: `<img src="cinnamon.png" alt="Cinnamon">`,
+    marroncream: `<img src="marroncream.png" alt="Marron Cream">`,
     
     goomba: `<img src="goomba.png" alt="Goomba">`,
     piranha: `<img src="piranha.png" alt="Piranha">`,
@@ -630,7 +652,8 @@
   let currentRound = 1;
   const TOTAL_ROUNDS = 10;
   let lives = 3;
-  let bossHp = 3;
+  let bossHp = 5; // 庫巴魔王設定為 5 條血
+  const BOSS_MAX_HP = 5;
   let correctAnswer = 0;
   let isActionLocked = false;
   let comboCount = 0;
@@ -690,7 +713,10 @@
     [160, 320, 480, 640].forEach((p, idx) => setTimeout(() => playTone(p, 'square', 0.045, 0.14), idx * 22));
   }
   function sndStomp() { playTone(150, 'triangle', 0.2, 0.45); }
-  function sndWrong() { playTone(120, 'sawtooth', 0.3, 0.25); }
+  function sndWrong() {
+    playTone(180, 'sawtooth', 0.15, 0.3);
+    setTimeout(() => playTone(90, 'sawtooth', 0.35, 0.35), 100);
+  }
   function sndPipe() {
     [300, 350, 400, 450].forEach((f, i) => setTimeout(() => playTone(f, 'sine', 0.08, 0.12), i * 35));
   }
@@ -809,7 +835,7 @@
     currentDifficulty = diff;
     currentRound = 1;
     lives = 3;
-    bossHp = 3;
+    bossHp = BOSS_MAX_HP;
     comboCount = 0;
     isActionLocked = false;
 
@@ -834,11 +860,10 @@
       appEl.classList.add('boss-theme');
       enemyBox.innerHTML = SPRITES.bowser;
       bossHpWrap.style.display = 'flex';
-      bossHearts.textContent = '❤️'.repeat(bossHp);
+      bossHearts.textContent = '❤️'.repeat(Math.max(0, bossHp)) + '🖤'.repeat(Math.max(0, BOSS_MAX_HP - bossHp));
     } else {
       appEl.classList.remove('boss-theme');
       bossHpWrap.style.display = 'none';
-      // 前 4 關為栗寶寶，第 5~9 關為食人花
       enemyBox.innerHTML = currentRound <= 4 ? SPRITES.goomba : SPRITES.piranha;
     }
   }
@@ -850,17 +875,17 @@
     updateEnemyVisual();
     updateBGMState();
 
-    playerBox.classList.remove('player-stomp-anim');
+    playerBox.classList.remove('player-stomp-anim', 'player-hurt-anim');
     playerBox.classList.add('idle-anim');
 
-    enemyBox.classList.remove('enemy-squished', 'idle-anim', 'enemy-emerge-anim');
+    enemyBox.classList.remove('enemy-squished', 'idle-anim', 'enemy-emerge-anim', 'enemy-attack-anim');
     setTimeout(() => {
       enemyBox.classList.add('enemy-emerge-anim');
       sndPipe();
     }, 25);
     
     setTimeout(() => {
-      if (!enemyBox.classList.contains('enemy-squished')) {
+      if (!enemyBox.classList.contains('enemy-squished') && !enemyBox.classList.contains('enemy-attack-anim')) {
         enemyBox.classList.remove('enemy-emerge-anim');
         enemyBox.classList.add('idle-anim');
       }
@@ -970,12 +995,14 @@
         const spark = document.createElement('div');
         spark.className = 'hit-spark';
         spark.innerHTML = SPRITES.spark;
+        spark.style.right = '42px';
+        spark.style.bottom = '105px';
         document.getElementById('battle-stage').appendChild(spark);
         setTimeout(() => spark.remove(), 320);
 
         if (currentRound === TOTAL_ROUNDS) {
           bossHp--;
-          bossHearts.textContent = '❤️'.repeat(Math.max(0, bossHp));
+          bossHearts.textContent = '❤️'.repeat(Math.max(0, bossHp)) + '🖤'.repeat(Math.max(0, BOSS_MAX_HP - bossHp));
           if (bossHp <= 0) {
             enemyBox.classList.remove('idle-anim', 'enemy-emerge-anim');
             enemyBox.classList.add('enemy-squished');
@@ -1009,34 +1036,51 @@
       }, 920);
 
     } else {
+      isActionLocked = true;
       comboCount = 0;
       updateStatusBadges();
 
-      if (activeShield) {
-        activeShield = false;
-        updateStatusBadges();
-        sndPowerUp();
-        qText.textContent = "🛡️ 護盾抵擋！";
-        setTimeout(nextTurn, 800);
-        return;
-      }
+      enemyBox.classList.remove('idle-anim', 'enemy-emerge-anim');
+      enemyBox.classList.add('enemy-attack-anim');
 
-      lives--;
-      updateLivesUI();
-      sndWrong();
-      triggerScreenShake();
-      
-      if (lives <= 0) {
-        isActionLocked = true;
-        bgmAudio.pause();
-        bossAudio.pause();
-        setTimeout(() => {
-          sndGameOver();
-        }, 120);
-        endBattle(false);
-      } else {
-        setTimeout(nextTurn, 800);
-      }
+      setTimeout(() => {
+        sndWrong();
+        triggerScreenShake();
+
+        playerBox.classList.remove('idle-anim');
+        playerBox.classList.add('player-hurt-anim');
+
+        const hitSpark = document.createElement('div');
+        hitSpark.className = 'hit-spark';
+        hitSpark.innerHTML = SPRITES.spark;
+        hitSpark.style.left = '40px';
+        hitSpark.style.bottom = '55px';
+        document.getElementById('battle-stage').appendChild(hitSpark);
+        setTimeout(() => hitSpark.remove(), 320);
+
+        if (activeShield) {
+          activeShield = false;
+          updateStatusBadges();
+          sndPowerUp();
+          qText.textContent = "🛡️ 護盾抵擋傷害！";
+          setTimeout(nextTurn, 1000);
+          return;
+        }
+
+        lives--;
+        updateLivesUI();
+
+        if (lives <= 0) {
+          bgmAudio.pause();
+          bossAudio.pause();
+          setTimeout(() => {
+            sndGameOver();
+          }, 120);
+          endBattle(false);
+        } else {
+          setTimeout(nextTurn, 1000);
+        }
+      }, 420);
     }
   }
 
@@ -1055,8 +1099,8 @@
   }
 
   function refreshShopUI() {
-    const skins = ['mario', 'luigi', 'peach', 'yoshi', 'cinnamon'];
-    const prices = { luigi: 60, peach: 80, yoshi: 100, cinnamon: 150 };
+    const skins = ['mario', 'luigi', 'peach', 'yoshi', 'cinnamon', 'marroncream'];
+    const prices = { luigi: 60, peach: 80, yoshi: 100, cinnamon: 150, marroncream: 150 };
 
     skins.forEach(s => {
       const btn = document.getElementById(`btn-skin-${s}`);
