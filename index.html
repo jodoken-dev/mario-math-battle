@@ -3,388 +3,719 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🍄 瑪利歐加減法大冒險</title>
+<title>🍄 瑪利歐數學大冒險</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  * {
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    margin: 0;
+    padding: 0;
+    touch-action: manipulation;
+  }
   body {
     background: #0f172a;
+    color: #ffffff;
+    font-family: 'Press Start 2P', monospace, sans-serif;
+    overflow: hidden;
+    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
+  }
+
+  #game-app {
+    width: 100%;
+    max-width: 480px;
     height: 100vh;
-    overflow: hidden;
-    font-family: 'Press Start 2P', monospace;
-  }
-  #game-container {
-    width: 480px;
-    height: 720px;
-    border: 4px solid #000;
-    box-shadow: 0 10px 0 #000;
+    max-height: 800px;
     position: relative;
-  }
-  #leaderboard-modal {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(15, 23, 42, 0.95);
-    display: none;
+    display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    z-index: 50;
-    color: #fff;
+    background: #5c94fc;
+    border: 6px solid #000000;
+    box-shadow: 0 10px 0 #000000;
+    overflow: hidden;
   }
-  .lb-title { font-size: 18px; color: #fde047; margin-bottom: 16px; text-shadow: 2px 2px #c2410c; }
-  .lb-table { width: 100%; font-size: 11px; margin-bottom: 20px; border-collapse: collapse; }
-  .lb-table th { color: #38bdf8; padding: 8px 4px; border-bottom: 2px solid #334155; }
-  .lb-table td { padding: 8px 4px; text-align: center; border-bottom: 1px solid #1e293b; }
-  .lb-btn {
-    background: #e52521;
-    border: 2px solid #fff;
-    color: #fff;
+
+  .screen-shake {
+    animation: shakeEffect 0.25s cubic-bezier(.36,.07,.19,.97) both;
+  }
+  @keyframes shakeEffect {
+    10%, 90% { transform: translate3d(-2px, 2px, 0); }
+    20%, 80% { transform: translate3d(3px, -2px, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 3px, 0); }
+    40%, 60% { transform: translate3d(4px, -3px, 0); }
+  }
+
+  #header {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #ffffff;
+    text-shadow: 2px 2px #000000;
+    z-index: 10;
+    border-bottom: 3px solid #000;
+  }
+
+  .btn-top {
+    background: #f59e0b;
+    border: 2px solid #ffffff;
+    color: #000;
     font-family: inherit;
-    font-size: 12px;
-    padding: 10px 16px;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 5px 8px;
+    border-radius: 6px;
     cursor: pointer;
   }
+  .btn-top:active { transform: translateY(2px); }
+
+  #battle-stage {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    padding: 10px 16px 0;
+    overflow: hidden;
+  }
+
+  .clouds-layer {
+    position: absolute;
+    top: 25px;
+    left: 0;
+    width: 200%;
+    height: 45px;
+    background: radial-gradient(circle 14px at 20px 20px, #ffffff 100%, transparent 0),
+                radial-gradient(circle 20px at 45px 16px, #ffffff 100%, transparent 0),
+                radial-gradient(circle 14px at 70px 20px, #ffffff 100%, transparent 0);
+    background-size: 240px 45px;
+    opacity: 0.85;
+    animation: cloudMove 25s linear infinite;
+    z-index: 1;
+  }
+  @keyframes cloudMove {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .hills-layer {
+    position: absolute;
+    bottom: 32px;
+    width: 100%;
+    height: 90px;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .question-block {
+    background: #fcb040;
+    border: 4px solid #000000;
+    box-shadow: inset -4px -4px 0 #8c4000, inset 4px 4px 0 #ffe0a0, 0 5px 0 rgba(0,0,0,0.4);
+    padding: 10px 14px;
+    border-radius: 10px;
+    text-align: center;
+    margin-top: 4px;
+    animation: floatBlock 2.2s infinite ease-in-out;
+    z-index: 5;
+    width: 96%;
+  }
+  @keyframes floatBlock {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+  .q-math {
+    font-size: 22px;
+    color: #000000;
+    letter-spacing: 2px;
+    font-weight: 900;
+  }
+
+  .arena {
+    width: 100%;
+    height: 190px;
+    position: relative;
+    margin-bottom: -4px;
+    z-index: 6;
+  }
+
+  .sprite-box {
+    position: absolute;
+    bottom: 0px;
+    width: 90px;
+    height: 100px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    filter: drop-shadow(3px 4px 0 rgba(0,0,0,0.3));
+  }
+
+  .idle-anim {
+    animation: idleBounce 1.2s infinite ease-in-out alternate;
+  }
+  @keyframes idleBounce {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-5px); }
+  }
+
+  #player-box { left: 24px; z-index: 15; }
+  #enemy-box { right: 30px; z-index: 10; transform-origin: bottom center; }
+
+  .player-stomp-anim {
+    animation: heroJumpStomp 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important;
+  }
+  @keyframes heroJumpStomp {
+    0% { transform: translate3d(0, 0, 0); }
+    35% { transform: translate3d(130px, -135px, 0) rotate(-10deg); }
+    65% { transform: translate3d(240px, -15px, 0) scaleY(0.85); }
+    80% { transform: translate3d(240px, -45px, 0); }
+    100% { transform: translate3d(240px, 0, 0); }
+  }
+
+  .enemy-squished {
+    animation: squishAnim 0.4s ease forwards !important;
+  }
+  @keyframes squishAnim {
+    0% { transform: scale(1, 1); }
+    40% { transform: scale(1.4, 0.2) translateY(25px); opacity: 0.9; }
+    100% { transform: scale(1.6, 0.05) translateY(35px); opacity: 0; }
+  }
+
+  .hit-spark {
+    position: absolute;
+    right: 50px;
+    bottom: 30px;
+    width: 60px;
+    height: 60px;
+    pointer-events: none;
+    z-index: 25;
+    animation: hitPop 0.35s ease-out forwards;
+  }
+  @keyframes hitPop {
+    0% { transform: scale(0.2) rotate(0deg); opacity: 1; }
+    100% { transform: scale(1.5) rotate(45deg); opacity: 0; }
+  }
+
+  .scenery-ground { width: 100%; position: relative; z-index: 5; }
+  .pipe {
+    position: absolute;
+    right: 25px;
+    bottom: 0;
+    width: 50px;
+    height: 40px;
+    background: #00a800;
+    border: 4px solid #000;
+    box-shadow: inset 4px 0 0 #54f054, inset -4px 0 0 #005400;
+  }
+  .pipe::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: -6px;
+    width: 54px;
+    height: 12px;
+    background: #00a800;
+    border: 4px solid #000;
+    box-shadow: inset 4px 0 0 #54f054, inset -4px 0 0 #005400;
+  }
+  .ground {
+    width: 100%;
+    height: 32px;
+    background: repeating-linear-gradient(
+      45deg,
+      #c84c0c, #c84c0c 12px,
+      #000 12px, #000 14px,
+      #fc9838 14px, #fc9838 24px
+    );
+    border-top: 4px solid #000;
+  }
+
+  #options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 12px 14px 18px;
+    background: #000000;
+    width: 100%;
+    border-top: 4px solid #ffffff;
+    z-index: 20;
+  }
+
+  .btn-option {
+    background: #e52521;
+    border: 4px solid #ffffff;
+    box-shadow: inset -4px -4px 0 #800000, inset 4px 4px 0 #ff9999, 0 4px 0 #000;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 24px;
+    font-weight: 900;
+    padding: 15px 0;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .btn-option:active { transform: translateY(3px); box-shadow: none; }
+
+  .coin-fx {
+    position: absolute;
+    font-size: 22px;
+    color: #ffd700;
+    text-shadow: 2px 2px #000;
+    font-weight: 900;
+    pointer-events: none;
+    z-index: 30;
+    animation: coinPop 0.65s ease-out forwards;
+  }
+  @keyframes coinPop {
+    0% { transform: translate3d(0, 0, 0) scale(0.6); opacity: 1; }
+    100% { transform: translate3d(0, -60px, 0) scale(1.3); opacity: 0; }
+  }
+
+  .modal-screen {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.96);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 16px 20px;
+    z-index: 50;
+    text-align: center;
+  }
+  .modal-title { font-size: 16px; color: #fde047; margin-bottom: 10px; text-shadow: 2px 2px #c2410c; }
+  .modal-desc { font-size: 11px; color: #94a3b8; margin-bottom: 12px; font-family: sans-serif; font-weight: bold; }
+
+  .mode-group-title {
+    width: 100%;
+    font-size: 11px;
+    color: #38bdf8;
+    text-align: left;
+    margin: 6px 0 4px;
+    font-family: sans-serif;
+    font-weight: bold;
+  }
+
+  .mode-btn {
+    width: 100%;
+    background: #0284c7;
+    border: 2px solid #ffffff;
+    box-shadow: inset -2px -2px 0 #0369a1, inset 2px 2px 0 #38bdf8, 0 3px 0 #000;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 900;
+    padding: 9px 6px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .mode-btn:active { transform: translateY(2px); box-shadow: none; }
+  .mode-btn.mul {
+    background: #059669;
+    box-shadow: inset -2px -2px 0 #047857, inset 2px 2px 0 #34d399, 0 3px 0 #000;
+  }
+
+  .lb-table { width: 100%; font-size: 11px; margin-bottom: 16px; border-collapse: collapse; }
+  .lb-table th { color: #38bdf8; padding: 6px 4px; border-bottom: 2px solid #334155; }
+  .lb-table td { padding: 6px 4px; text-align: center; border-bottom: 1px solid #1e293b; }
 </style>
 </head>
 <body>
 
-<div id="game-container">
-  <div id="leaderboard-modal">
-    <div class="lb-title">🏆 冒險排行榜</div>
+<div id="game-app">
+  <div id="header">
+    <div>🪙 <span id="coin-total">0</span></div>
+    <div>RD <span id="round-count">1</span>/5</div>
+    <div><span id="lives-display">❤️❤️❤️</span></div>
+    <button class="btn-top" onclick="showDifficultyMenu()">⚙️ 難度</button>
+    <button class="btn-top" onclick="openLeaderboard()">🏆 榜</button>
+  </div>
+
+  <div id="battle-stage">
+    <div class="clouds-layer"></div>
+    <div class="hills-layer">
+      <svg width="100%" height="100%" viewBox="0 0 400 90" preserveAspectRatio="none">
+        <ellipse cx="60" cy="90" rx="90" ry="60" fill="#008800" stroke="#000" stroke-width="3"/>
+        <ellipse cx="280" cy="90" rx="120" ry="70" fill="#00a800" stroke="#000" stroke-width="3"/>
+        <ellipse cx="160" cy="90" rx="35" ry="25" fill="#54f054" stroke="#000" stroke-width="2.5"/>
+        <ellipse cx="370" cy="90" rx="40" ry="28" fill="#54f054" stroke="#000" stroke-width="2.5"/>
+      </svg>
+    </div>
+
+    <div class="question-block">
+      <div class="q-math" id="q-text">-- + --</div>
+    </div>
+
+    <div class="arena">
+      <div class="sprite-box idle-anim" id="player-box"></div>
+      <div class="sprite-box idle-anim" id="enemy-box"></div>
+    </div>
+
+    <div class="scenery-ground">
+      <div class="pipe"></div>
+      <div class="ground"></div>
+    </div>
+  </div>
+
+  <div id="options-grid">
+    <button class="btn-option" onclick="handleChoice(0)" id="opt-0">-</button>
+    <button class="btn-option" onclick="handleChoice(1)" id="opt-1">-</button>
+    <button class="btn-option" onclick="handleChoice(2)" id="opt-2">-</button>
+    <button class="btn-option" onclick="handleChoice(3)" id="opt-3">-</button>
+  </div>
+
+  <!-- 6 種難度選擇選單 -->
+  <div id="modal-box" class="modal-screen">
+    <h1 class="modal-title">SUPER MARIO<br>MATH BATTLE</h1>
+    <p class="modal-desc">請選擇訓練等級：</p>
+    
+    <div class="mode-group-title">➕ ➖ 加減法冒險</div>
+    <button class="mode-btn" onclick="startBattle('10')">🍄 10 以內加減法</button>
+    <button class="mode-btn" onclick="startBattle('100')">⭐ 100 以內加減法</button>
+    <button class="mode-btn" onclick="startBattle('1000')">👑 1000 以內直式挑戰</button>
+    
+    <div class="mode-group-title">✖️ 九九乘法表冒險</div>
+    <button class="mode-btn mul" onclick="startBattle('mul_2_5')">🌸 2 ~ 5 乘法表</button>
+    <button class="mode-btn mul" onclick="startBattle('mul_5_6')">⚡ 5 ~ 6 乘法表</button>
+    <button class="mode-btn mul" onclick="startBattle('mul_2_9')">🔥 2 ~ 9 乘法全階段</button>
+  </div>
+
+  <!-- 排行榜視窗 -->
+  <div id="lb-modal" class="modal-screen" style="display:none;">
+    <h1 class="modal-title">🏆 TOP 10 冒險英雄榜</h1>
     <table class="lb-table">
-      <thead>
-        <tr><th>#</th><th>PLAYER</th><th>COINS</th><th>ROUNDS</th></tr>
-      </thead>
+      <thead><tr><th>#</th><th>玩家</th><th>金幣</th><th>模式</th></tr></thead>
       <tbody id="lb-body"></tbody>
     </table>
-    <button class="lb-btn" onclick="closeLeaderboard()">關閉</button>
+    <button class="mode-btn" style="background:#dc2626;" onclick="closeLeaderboard()">關閉</button>
   </div>
 </div>
 
 <script>
-const LocalGameEngine = {
-  generateQuestion(difficulty) {
-    const isPlus = Math.random() > 0.45;
-    let a = 0, b = 0, maxR = 10;
+  const SVGS = {
+    mario: `
+      <svg viewBox="0 0 100 120" width="80" height="95">
+        <ellipse cx="50" cy="22" rx="32" ry="16" fill="#e52521" stroke="#000" stroke-width="3"/>
+        <path d="M 18 28 Q 50 14 82 28 Q 50 38 18 28" fill="#e52521" stroke="#000" stroke-width="3"/>
+        <ellipse cx="50" cy="18" rx="9" ry="7" fill="#ffffff" stroke="#000" stroke-width="2"/>
+        <circle cx="22" cy="48" r="7" fill="#fed7aa" stroke="#000" stroke-width="2.5"/>
+        <ellipse cx="50" cy="50" rx="26" ry="20" fill="#fed7aa" stroke="#000" stroke-width="3"/>
+        <ellipse cx="60" cy="42" rx="4.5" ry="8" fill="#000"/>
+        <ellipse cx="66" cy="48" rx="12" ry="9" fill="#fed7aa" stroke="#000" stroke-width="3"/>
+        <path d="M 32 54 C 42 46 64 48 76 56 C 68 64 46 63 32 54 Z" fill="#451a03" stroke="#000" stroke-width="2.5"/>
+        <ellipse cx="50" cy="84" rx="24" ry="20" fill="#e52521" stroke="#000" stroke-width="3"/>
+        <path d="M 30 78 L 70 78 L 66 106 L 34 106 Z" fill="#0284c7" stroke="#000" stroke-width="3"/>
+        <circle cx="38" cy="84" r="4.5" fill="#facc15" stroke="#000" stroke-width="2"/>
+        <circle cx="62" cy="84" r="4.5" fill="#facc15" stroke="#000" stroke-width="2"/>
+        <ellipse cx="36" cy="110" rx="14" ry="8" fill="#78350f" stroke="#000" stroke-width="3"/>
+        <ellipse cx="64" cy="110" rx="14" ry="8" fill="#78350f" stroke="#000" stroke-width="3"/>
+      </svg>
+    `,
+    goomba: `
+      <svg viewBox="0 0 100 100" width="75" height="75">
+        <path d="M 50 15 C 20 15 12 55 22 68 C 30 78 70 78 78 68 C 88 55 80 15 50 15" fill="#9a3412" stroke="#000" stroke-width="3"/>
+        <ellipse cx="38" cy="46" rx="5" ry="10" fill="#fff" stroke="#000" stroke-width="2"/>
+        <ellipse cx="62" cy="46" rx="5" ry="10" fill="#fff" stroke="#000" stroke-width="2"/>
+        <circle cx="40" cy="48" r="3" fill="#000"/>
+        <circle cx="60" cy="48" r="3" fill="#000"/>
+        <path d="M 32 34 L 46 40 M 68 34 L 54 40" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+        <polygon points="34,68 38,60 42,68" fill="#fff"/>
+        <polygon points="58,68 62,60 66,68" fill="#fff"/>
+        <ellipse cx="32" cy="80" rx="14" ry="8" fill="#000"/>
+        <ellipse cx="68" cy="80" rx="14" ry="8" fill="#000"/>
+      </svg>
+    `,
+    spark: `
+      <svg viewBox="0 0 100 100" width="100%" height="100%">
+        <polygon points="50,0 60,35 95,50 60,65 50,100 40,65 5,50 40,35" fill="#fde047" stroke="#ffffff" stroke-width="4"/>
+      </svg>
+    `
+  };
 
-    if (difficulty === "10") {
+  const actx = new (window.AudioContext || window.webkitAudioContext)();
+  function playTone(freq, type, dur, gainVal = 0.15) {
+    try {
+      if (actx.state === 'suspended') actx.resume();
+      const osc = actx.createOscillator();
+      const g = actx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, actx.currentTime);
+      g.gain.setValueAtTime(gainVal, actx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + dur);
+      osc.connect(g);
+      g.connect(actx.destination);
+      osc.start();
+      osc.stop(actx.currentTime + dur);
+    } catch(e) {}
+  }
+
+  function sndCoin() {
+    playTone(987.77, 'square', 0.08, 0.2);
+    setTimeout(() => playTone(1318.51, 'square', 0.28, 0.2), 70);
+  }
+  function sndJump() {
+    [150, 300, 450, 600].forEach((p, idx) => setTimeout(() => playTone(p, 'square', 0.04, 0.12), idx * 25));
+  }
+  function sndStomp() { playTone(160, 'triangle', 0.18, 0.4); }
+  function sndWrong() { playTone(120, 'sawtooth', 0.25, 0.2); }
+
+  let totalCoins = parseInt(localStorage.getItem('mario_total_coins') || '0', 10);
+  let currentDifficulty = '10';
+  let currentRound = 1;
+  let earnedCoinsThisRound = 0;
+  let lives = 3;
+  let correctAnswer = 0;
+  let isActionLocked = false;
+
+  const appEl = document.getElementById('game-app');
+  const qText = document.getElementById('q-text');
+  const coinTotalEl = document.getElementById('coin-total');
+  const roundCount = document.getElementById('round-count');
+  const livesDisplay = document.getElementById('lives-display');
+  const modalBox = document.getElementById('modal-box');
+  const lbModal = document.getElementById('lb-modal');
+  const playerBox = document.getElementById('player-box');
+  const enemyBox = document.getElementById('enemy-box');
+
+  function updateCoinUI() {
+    coinTotalEl.textContent = `${totalCoins}`;
+  }
+
+  function showDifficultyMenu() {
+    modalBox.style.display = 'flex';
+  }
+
+  function startBattle(diff) {
+    currentDifficulty = diff;
+    currentRound = 1;
+    earnedCoinsThisRound = 0;
+    lives = 3;
+    isActionLocked = false;
+
+    roundCount.textContent = `${currentRound}`;
+    updateLivesUI();
+    playerBox.innerHTML = SVGS.mario;
+    enemyBox.innerHTML = SVGS.goomba;
+
+    modalBox.style.display = 'none';
+    lbModal.style.display = 'none';
+    nextTurn();
+  }
+
+  function updateLivesUI() {
+    livesDisplay.textContent = '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, 3 - lives));
+  }
+
+  function nextTurn() {
+    if (currentRound > 5) {
+      endBattle(true);
+      return;
+    }
+    isActionLocked = false;
+    roundCount.textContent = `${currentRound}`;
+    
+    enemyBox.classList.remove('enemy-squished');
+    enemyBox.classList.add('idle-anim');
+    playerBox.classList.remove('player-stomp-anim');
+    playerBox.classList.add('idle-anim');
+
+    let a = 0, b = 0, maxRange = 10;
+
+    if (currentDifficulty === '10') {
+      const isPlus = Math.random() > 0.45;
       a = isPlus ? Math.floor(Math.random() * 6) : Math.floor(Math.random() * 10) + 1;
       b = isPlus ? Math.floor(Math.random() * (10 - a)) : Math.floor(Math.random() * (a + 1));
-      maxR = 10;
-    } else if (difficulty === "100") {
+      maxRange = 10;
+      correctAnswer = isPlus ? a + b : a - b;
+      qText.textContent = `${a} ${isPlus ? '+' : '-'} ${b} = ?`;
+    } 
+    else if (currentDifficulty === '100') {
+      const isPlus = Math.random() > 0.45;
       a = isPlus ? Math.floor(Math.random() * 50) + 10 : Math.floor(Math.random() * 60) + 20;
       b = isPlus ? Math.floor(Math.random() * (100 - a)) : Math.floor(Math.random() * (a - 5)) + 1;
-      maxR = 100;
-    } else {
+      maxRange = 100;
+      correctAnswer = isPlus ? a + b : a - b;
+      qText.textContent = `${a} ${isPlus ? '+' : '-'} ${b} = ?`;
+    } 
+    else if (currentDifficulty === '1000') {
+      const isPlus = Math.random() > 0.45;
       a = isPlus ? Math.floor(Math.random() * 450) + 50 : Math.floor(Math.random() * 500) + 200;
       b = isPlus ? Math.floor(Math.random() * (1000 - a)) : Math.floor(Math.random() * (a - 20)) + 10;
-      maxR = 1000;
+      maxRange = 1000;
+      correctAnswer = isPlus ? a + b : a - b;
+      qText.textContent = `${a} ${isPlus ? '+' : '-'} ${b} = ?`;
+    }
+    // 九九乘法表：2 ~ 5
+    else if (currentDifficulty === 'mul_2_5') {
+      a = Math.floor(Math.random() * 4) + 2; // 2 ~ 5
+      b = Math.floor(Math.random() * 9) + 1; // 1 ~ 9
+      maxRange = 45;
+      correctAnswer = a * b;
+      qText.textContent = `${a} × ${b} = ?`;
+    }
+    // 九九乘法表：5 ~ 6
+    else if (currentDifficulty === 'mul_5_6') {
+      a = Math.floor(Math.random() * 2) + 5; // 5 ~ 6
+      b = Math.floor(Math.random() * 9) + 1; // 1 ~ 9
+      maxRange = 54;
+      correctAnswer = a * b;
+      qText.textContent = `${a} × ${b} = ?`;
+    }
+    // 九九乘法表：2 ~ 9
+    else if (currentDifficulty === 'mul_2_9') {
+      a = Math.floor(Math.random() * 8) + 2; // 2 ~ 9
+      b = Math.floor(Math.random() * 9) + 1; // 1 ~ 9
+      maxRange = 81;
+      correctAnswer = a * b;
+      qText.textContent = `${a} × ${b} = ?`;
     }
 
-    const ans = isPlus ? a + b : a - b;
-    const options = new Set([ans]);
+    const options = new Set([correctAnswer]);
     while (options.size < 4) {
-      const offset = (Math.floor(Math.random() * 7) - 3) * (difficulty === "1000" ? 10 : 1);
-      const fake = ans + (offset === 0 ? 2 : offset);
-      if (fake >= 0 && fake <= maxR) options.add(fake);
-      else options.add(Math.floor(Math.random() * maxR));
-    }
-
-    return {
-      question: `${a} ${isPlus ? '+' : '-'} ${b} = ?`,
-      correct_answer: ans,
-      options: Array.from(options).sort(() => Math.random() - 0.5)
-    };
-  },
-
-  verify(userAnswer, correctAnswer, difficulty) {
-    const isCorrect = userAnswer === correctAnswer;
-    const rewards = { "10": 5, "100": 15, "1000": 50 };
-    return {
-      is_correct: isCorrect,
-      coin_earned: isCorrect ? (rewards[difficulty] || 5) : 0
-    };
-  },
-
-  saveScore(name, coins, rounds) {
-    const list = JSON.parse(localStorage.getItem('local_lb') || '[]');
-    list.push({ name, coins, rounds });
-    list.sort((a, b) => b.coins - a.coins || b.rounds - a.rounds);
-    localStorage.setItem('local_lb', JSON.stringify(list.slice(0, 10)));
-  },
-
-  getLeaderboard() {
-    return JSON.parse(localStorage.getItem('local_lb') || '[]');
-  }
-};
-
-class MathBattleScene extends Phaser.Scene {
-  constructor() {
-    super('MathBattleScene');
-  }
-
-  init() {
-    this.coins = 0;
-    this.round = 1;
-    this.lives = 3;
-    this.difficulty = '10';
-    this.currentData = null;
-    this.isActionLocked = false;
-    this.playerName = localStorage.getItem('player_name') || 'MarioHero';
-  }
-
-  preload() {
-    this.createTextureHero();
-    this.createTextureEnemy();
-    this.createTextureSpark();
-  }
-
-  create() {
-    const { width, height } = this.scale;
-
-    this.add.rectangle(width / 2, height / 2, width, height, 0x5c94fc);
-    
-    const hills = this.add.graphics();
-    hills.fillStyle(0x00a800, 1);
-    hills.fillCircle(80, 480, 120);
-    hills.fillCircle(400, 480, 150);
-    hills.fillStyle(0x008800, 1);
-    hills.fillCircle(240, 490, 80);
-
-    this.add.rectangle(width / 2, 490, width, 60, 0xc84c0c);
-    this.add.rectangle(width / 2, 462, width, 4, 0x000000);
-    this.add.rectangle(380, 440, 60, 50, 0x00a800).setStrokeStyle(3, 0x000000);
-    this.add.rectangle(380, 410, 68, 14, 0x00a800).setStrokeStyle(3, 0x000000);
-
-    this.hero = this.add.sprite(90, 425, 'pixel_hero');
-    this.enemy = this.add.sprite(380, 425, 'pixel_enemy');
-
-    this.tweens.add({
-      targets: [this.hero, this.enemy],
-      y: '-=5',
-      duration: 600,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
-
-    this.coinText = this.add.text(20, 20, `🪙 0`, { font: '14px "Press Start 2P"', fill: '#fff' }).setStroke('#000', 4);
-    this.roundText = this.add.text(180, 20, `RD 1/5`, { font: '14px "Press Start 2P"', fill: '#fff' }).setStroke('#000', 4);
-    this.livesText = this.add.text(320, 20, `❤️❤️❤️`, { font: '14px sans-serif' });
-
-    const rankBtn = this.add.rectangle(420, 60, 90, 30, 0xf59e0b).setStrokeStyle(2, 0xffffff).setInteractive({ useHandCursor: true });
-    this.add.text(420, 60, `🏆 榜`, { font: '11px sans-serif', fill: '#000' }).setOrigin(0.5);
-    rankBtn.on('pointerdown', () => openLeaderboard());
-
-    this.qBox = this.add.rectangle(width / 2, 110, 400, 60, 0xfcb040).setStrokeStyle(4, 0x000000);
-    this.qText = this.add.text(width / 2, 110, `載入中...`, { font: '20px "Press Start 2P"', fill: '#000' }).setOrigin(0.5);
-
-    this.sparks = this.add.particles(0, 0, 'spark', {
-      speed: { min: 100, max: 250 },
-      scale: { start: 1.5, end: 0 },
-      lifespan: 350,
-      emitting: false
-    });
-
-    this.optionButtons = [];
-    this.optionTexts = [];
-    const btnPositions = [
-      { x: 130, y: 560 }, { x: 350, y: 560 },
-      { x: 130, y: 640 }, { x: 350, y: 640 }
-    ];
-
-    btnPositions.forEach((pos, idx) => {
-      const btn = this.add.rectangle(pos.x, pos.y, 200, 64, 0xe52521).setStrokeStyle(4, 0xffffff).setInteractive({ useHandCursor: true });
-      const txt = this.add.text(pos.x, pos.y, `-`, { font: '24px "Press Start 2P"', fill: '#ffffff' }).setOrigin(0.5);
-      btn.on('pointerdown', () => this.handleAnswer(idx));
-      btn.on('pointerover', () => btn.setFillStyle(0xff4444));
-      btn.on('pointerout', () => btn.setFillStyle(0xe52521));
-      this.optionButtons.push(btn);
-      this.optionTexts.push(txt);
-    });
-
-    this.fetchNextQuestion();
-  }
-
-  fetchNextQuestion() {
-    this.currentData = LocalGameEngine.generateQuestion(this.difficulty);
-    this.qText.setText(this.currentData.question);
-    this.currentData.options.forEach((opt, i) => {
-      this.optionTexts[i].setText(opt);
-      this.optionButtons[i].setData('value', opt);
-    });
-    this.isActionLocked = false;
-  }
-
-  handleAnswer(index) {
-    if (this.isActionLocked) return;
-    this.isActionLocked = true;
-
-    const chosen = this.optionButtons[index].getData('value');
-    const result = LocalGameEngine.verify(chosen, this.currentData.correct_answer, this.difficulty);
-
-    if (result.is_correct) {
-      this.playAttackSequence(result.coin_earned);
-    } else {
-      this.playHurtSequence();
-    }
-  }
-
-  playAttackSequence(earned) {
-    this.coins += earned;
-    this.coinText.setText(`🪙 ${this.coins}`);
-
-    this.tweens.add({
-      targets: this.hero,
-      x: 380,
-      y: 270,
-      angle: -10,
-      duration: 320,
-      ease: 'Quad.easeOut',
-      onComplete: () => {
-        this.tweens.add({
-          targets: this.hero,
-          y: 425,
-          angle: 0,
-          duration: 180,
-          ease: 'Quad.easeIn',
-          onComplete: () => {
-            this.cameras.main.shake(200, 0.015);
-            this.sparks.emitParticleAt(380, 430, 20);
-
-            this.tweens.add({
-              targets: this.enemy,
-              scaleY: 0.2, scaleX: 2.2, duration: 120, yoyo: true
-            });
-
-            this.tweens.add({
-              targets: this.hero,
-              x: 90, y: 425, duration: 380, delay: 150,
-              onComplete: () => {
-                this.round++;
-                if (this.round > 5) {
-                  this.qText.setText("🏆 STAGE CLEAR!");
-                  this.submitScoreAndShowBoard();
-                } else {
-                  this.roundText.setText(`RD ${this.round}/5`);
-                  this.fetchNextQuestion();
-                }
-              }
-            });
-          }
-        });
-      }
-    });
-  }
-
-  playHurtSequence() {
-    this.lives--;
-    this.livesText.setText('❤️'.repeat(Math.max(0, this.lives)) + '🖤'.repeat(Math.max(0, 3 - this.lives)));
-    this.cameras.main.shake(250, 0.02);
-    this.hero.setTint(0xff0000);
-    this.time.delayedCall(300, () => {
-      this.hero.clearTint();
-      if (this.lives <= 0) {
-        this.qText.setText("💀 GAME OVER");
-        this.submitScoreAndShowBoard();
+      let offset = 0;
+      if (currentDifficulty === '1000') {
+        offset = (Math.floor(Math.random() * 7) - 3) * 10;
+      } else if (currentDifficulty.startsWith('mul_')) {
+        offset = (Math.floor(Math.random() * 7) - 3) * (Math.random() > 0.5 ? a : 1);
       } else {
-        this.isActionLocked = false;
+        offset = (Math.floor(Math.random() * 7) - 3);
       }
-    });
+      
+      const fake = correctAnswer + (offset === 0 ? 2 : offset);
+      if (fake >= 0 && fake <= maxRange) options.add(fake);
+      else options.add(Math.floor(Math.random() * maxRange));
+    }
+    const optionArr = Array.from(options).sort(() => Math.random() - 0.5);
+
+    for (let i = 0; i < 4; i++) {
+      const btn = document.getElementById(`opt-${i}`);
+      btn.textContent = optionArr[i];
+      btn.dataset.val = optionArr[i];
+    }
   }
 
-  submitScoreAndShowBoard() {
-    const name = prompt("請輸入你的名字紀錄成績：", this.playerName) || "MarioHero";
-    this.playerName = name;
-    localStorage.setItem('player_name', name);
-    LocalGameEngine.saveScore(name, this.coins, this.round - 1);
+  function handleChoice(idx) {
+    if (isActionLocked) return;
+    const chosen = parseInt(document.getElementById(`opt-${idx}`).dataset.val, 10);
+
+    if (chosen === correctAnswer) {
+      isActionLocked = true;
+      const rewards = {
+        "10": 5, "100": 15, "1000": 50,
+        "mul_2_5": 10, "mul_5_6": 15, "mul_2_9": 25
+      };
+      const reward = rewards[currentDifficulty] || 10;
+
+      earnedCoinsThisRound += reward;
+      totalCoins += reward;
+      localStorage.setItem('mario_total_coins', totalCoins);
+      updateCoinUI();
+      
+      sndJump();
+      playerBox.classList.remove('idle-anim');
+      playerBox.classList.add('player-stomp-anim');
+
+      setTimeout(() => {
+        sndStomp();
+        sndCoin();
+        triggerScreenShake();
+        
+        const spark = document.createElement('div');
+        spark.className = 'hit-spark';
+        spark.innerHTML = SVGS.spark;
+        document.getElementById('battle-stage').appendChild(spark);
+        setTimeout(() => spark.remove(), 350);
+
+        enemyBox.classList.remove('idle-anim');
+        enemyBox.classList.add('enemy-squished');
+
+        const fx = document.createElement('div');
+        fx.className = 'coin-fx';
+        fx.textContent = `🪙 +${reward}`;
+        fx.style.right = '45px';
+        fx.style.bottom = '80px';
+        document.getElementById('battle-stage').appendChild(fx);
+        setTimeout(() => fx.remove(), 650);
+      }, 400);
+
+      currentRound++;
+      setTimeout(nextTurn, 1000);
+    } else {
+      lives--;
+      updateLivesUI();
+      sndWrong();
+      triggerScreenShake();
+      if (lives <= 0) {
+        isActionLocked = true;
+        setTimeout(() => endBattle(false), 450);
+      }
+    }
+  }
+
+  function triggerScreenShake() {
+    appEl.classList.remove('screen-shake');
+    void appEl.offsetWidth;
+    appEl.classList.add('screen-shake');
+  }
+
+  function endBattle(isWin) {
+    const name = prompt(isWin ? "🎉 恭喜通關！請輸入名字紀錄戰績：" : "冒險結束！請輸入名字：", "瑪利歐高手") || "英雄";
+    saveScore(name, totalCoins, currentDifficulty);
     openLeaderboard();
   }
 
-  createTextureHero() {
-    const g = this.make.graphics({ x: 0, y: 0, add: false });
-    g.fillStyle(0xe52521, 1);
-    g.fillRect(16, 0, 32, 16);
-    g.fillRect(8, 12, 44, 8);
-    g.fillStyle(0xfed7aa, 1);
-    g.fillRect(16, 20, 28, 20);
-    g.fillRect(40, 24, 12, 12);
-    g.fillStyle(0x451a03, 1);
-    g.fillRect(28, 32, 24, 8);
-    g.fillStyle(0x0284c7, 1);
-    g.fillRect(16, 40, 32, 24);
-    g.fillStyle(0xfde047, 1);
-    g.fillRect(20, 44, 6, 6);
-    g.fillRect(38, 44, 6, 6);
-    g.fillStyle(0x78350f, 1);
-    g.fillRect(12, 64, 16, 8);
-    g.fillRect(36, 64, 16, 8);
-    g.generateTexture('pixel_hero', 64, 72);
+  function saveScore(name, coins, mode) {
+    const modeNames = {
+      "10": "10加減", "100": "100加減", "1000": "1000加減",
+      "mul_2_5": "2-5乘法", "mul_5_6": "5-6乘法", "mul_2_9": "2-9乘法"
+    };
+    const list = JSON.parse(localStorage.getItem('mario_lb') || '[]');
+    list.push({ name, coins, mode: modeNames[mode] || "冒險" });
+    list.sort((a, b) => b.coins - a.coins);
+    localStorage.setItem('mario_lb', JSON.stringify(list.slice(0, 10)));
   }
 
-  createTextureEnemy() {
-    const g = this.make.graphics({ x: 0, y: 0, add: false });
-    g.fillStyle(0x9a3412, 1);
-    g.fillRect(16, 0, 32, 12);
-    g.fillRect(8, 12, 48, 24);
-    g.fillStyle(0xfed7aa, 1);
-    g.fillRect(16, 36, 32, 16);
-    g.fillStyle(0x000000, 1);
-    g.fillRect(20, 36, 6, 12);
-    g.fillRect(38, 36, 6, 12);
-    g.fillStyle(0x000000, 1);
-    g.fillRect(8, 52, 18, 10);
-    g.fillRect(38, 52, 18, 10);
-    g.generateTexture('pixel_enemy', 64, 64);
+  function openLeaderboard() {
+    const list = JSON.parse(localStorage.getItem('mario_lb') || '[]');
+    const tbody = document.getElementById('lb-body');
+    if (list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4">尚無紀錄</td></tr>';
+    } else {
+      tbody.innerHTML = list.map((item, idx) => `
+        <tr>
+          <td style="color:#fde047;">${idx + 1}</td>
+          <td>${item.name}</td>
+          <td>🪙 ${item.coins}</td>
+          <td>${item.mode || '-'}</td>
+        </tr>
+      `).join('');
+    }
+    lbModal.style.display = 'flex';
   }
 
-  createTextureSpark() {
-    const g = this.make.graphics({ x: 0, y: 0, add: false });
-    g.fillStyle(0xfde047, 1);
-    g.fillRect(3, 0, 4, 10);
-    g.fillRect(0, 3, 10, 4);
-    g.generateTexture('spark', 10, 10);
+  function closeLeaderboard() {
+    lbModal.style.display = 'none';
   }
-}
 
-function openLeaderboard() {
-  const modal = document.getElementById('leaderboard-modal');
-  const tbody = document.getElementById('lb-body');
-  modal.style.display = 'flex';
-  const data = LocalGameEngine.getLeaderboard();
-  
-  if (data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4">尚無紀錄</td></tr>';
-  } else {
-    tbody.innerHTML = data.map((item, idx) => `
-      <tr>
-        <td style="color:#fde047;">${idx + 1}</td>
-        <td>${item.name}</td>
-        <td>🪙 ${item.coins}</td>
-        <td>${item.rounds}</td>
-      </tr>
-    `).join('');
-  }
-}
+  // 鍵盤數字鍵 1, 2, 3, 4 快捷鍵支援
+  window.addEventListener('keydown', (e) => {
+    if (e.key === '1') handleChoice(0);
+    else if (e.key === '2') handleChoice(1);
+    else if (e.key === '3') handleChoice(2);
+    else if (e.key === '4') handleChoice(3);
+  });
 
-function closeLeaderboard() {
-  document.getElementById('leaderboard-modal').style.display = 'none';
-}
-
-const config = {
-  type: Phaser.AUTO,
-  parent: 'game-container',
-  width: 480,
-  height: 720,
-  pixelArt: true,
-  scene: [MathBattleScene]
-};
-new Phaser.Game(config);
+  updateCoinUI();
+  playerBox.innerHTML = SVGS.mario;
+  enemyBox.innerHTML = SVGS.goomba;
 </script>
 </body>
 </html>
