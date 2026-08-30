@@ -409,8 +409,18 @@
     border-radius: 12px;
     cursor: pointer;
     text-align: center;
+    transition: opacity 0.2s, background 0.2s;
   }
   .btn-option:active { transform: translateY(3px); box-shadow: none; }
+  
+  /* 被提示排除的錯誤選項樣式 */
+  .btn-option.eliminated {
+    background: #475569 !important;
+    color: #94a3b8 !important;
+    opacity: 0.35 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+  }
 
   .coin-fx {
     position: absolute;
@@ -595,8 +605,8 @@
     <div class="menu-scroll-area">
       <div class="mode-group-title">➕ ➖ 加法與減法挑戰</div>
       <button class="mode-btn" onclick="startBattle('10')">🍄 10 以內加減法 (8秒)</button>
-      <button class="mode-btn" onclick="startBattle('100')">⭐ 100 以內加減法 (15秒)</button>
-      <button class="mode-btn" onclick="startBattle('1000')">👑 1000 以內大冒險 (25秒)</button>
+      <button class="mode-btn" onclick="startBattle('100')">⭐ 100 以內加減法 (25秒)</button>
+      <button class="mode-btn" onclick="startBattle('1000')">👑 1000 以內大冒險 (35秒)</button>
       
       <div class="mode-group-title">✖️ 九九乘法表挑戰</div>
       <button class="mode-btn mul" onclick="startBattle('mul_2_5')">🌸 2 ~ 5 乘法表 (8秒)</button>
@@ -616,16 +626,20 @@
     
     <div class="shop-scroll-list">
       <div class="shop-item-row">
-        <div class="shop-item-info">🍄 超級蘑菇 (30 幣)<small>免死金牌：抵擋 1 次答錯扣血</small></div>
-        <button class="shop-buy-btn" onclick="buyItem('shield', 30)">購買</button>
+        <div class="shop-item-info">🍄 超級蘑菇 (30 幣)<small id="info-shield">免死金牌：抵擋 1 次扣血 (目前持有: 0)</small></div>
+        <button class="shop-buy-btn" onclick="buyItem('shield', 30)">購買 (+1)</button>
       </div>
       <div class="shop-item-row">
-        <div class="shop-item-info">⭐ 無敵星星 (50 幣)<small>下一題獲得 3 倍金幣獎勵</small></div>
-        <button class="shop-buy-btn" onclick="buyItem('star', 50)">購買</button>
+        <div class="shop-item-info">⭐ 無敵星星 (50 幣)<small id="info-star">獲得 3 倍金幣獎勵 (目前剩餘: 0 題)</small></div>
+        <button class="shop-buy-btn" onclick="buyItem('star', 50)">購買 (+1)</button>
       </div>
       <div class="shop-item-row">
-        <div class="shop-item-info">⏰ 停頓時鐘 (20 幣)<small>額外增加 5 秒作答時間</small></div>
-        <button class="shop-buy-btn" onclick="buyItem('clock', 20)">購買</button>
+        <div class="shop-item-info">⏰ 停頓時鐘 (20 幣)<small id="info-clock">下一題增加作答時間 (目前累積: +0 秒)</small></div>
+        <button class="shop-buy-btn" onclick="buyItem('clock', 20)">購買 (+5s)</button>
+      </div>
+      <div class="shop-item-row">
+        <div class="shop-item-info">💡 智慧提示 (25 幣)<small id="info-hint">自動排除 2 個錯誤答案 (目前持有: 0 次)</small></div>
+        <button class="shop-buy-btn" onclick="buyItem('hint', 25)">購買 (+1)</button>
       </div>
 
       <div class="shop-item-row">
@@ -688,9 +702,10 @@
   let unlockedSkins = JSON.parse(localStorage.getItem('mario_unlocked_skins') || '["mario"]');
   let currentSkin = localStorage.getItem('mario_current_skin') || 'mario';
 
-  let activeShield = false;
-  let activeStar = false;
-  let extraTimeAdded = 0;
+  let shieldCount = 0;      // 護盾累積層數
+  let starTurnsLeft = 0;    // 3倍金幣剩餘題數
+  let extraTimeAdded = 0;   // 下一題累積額外秒數
+  let hintCount = 0;        // 智慧提示剩餘次數
 
   let currentDifficulty = '10';
   let currentRound = 1;
@@ -832,21 +847,22 @@
 
   function updateStatusBadges() {
     let html = '';
-    if (activeShield) html += `<span class="status-badge" style="color:#4ade80;">🍄 護盾保護中</span>`;
-    if (activeStar) html += `<span class="status-badge" style="color:#fde047;">⭐ 3倍金幣</span>`;
+    if (shieldCount > 0) html += `<span class="status-badge" style="color:#4ade80;">🍄 護盾 x${shieldCount}</span>`;
+    if (starTurnsLeft > 0) html += `<span class="status-badge" style="color:#fde047;">⭐ 3倍 x${starTurnsLeft}</span>`;
+    if (hintCount > 0) html += `<span class="status-badge" style="color:#38bdf8;">💡 提示 x${hintCount}</span>`;
     if (comboCount > 1) html += `<span class="status-badge" style="color:#f43f5e;">⚡ Combo x${comboCount}</span>`;
     statusIndicator.innerHTML = html;
   }
 
-  /* ================= 計時器管理（各難度時間配置） ================= */
+  /* ================= 計時器管理 ================= */
   function getBaseTimeForDifficulty(diff) {
     switch (diff) {
-      case '1000': return 25;       // 1000以內：25秒
-      case '100': return 15;        // 100以內：15秒
-      case 'div_all': return 12;    // 除法全挑戰：12秒
-      case 'div_basic': return 10;  // 基礎除法：10秒
-      case 'mul_2_9': return 10;    // 乘法全挑戰：10秒
-      default: return 8;            // 10以內、基礎乘法：8秒
+      case '1000': return 35;
+      case '100': return 25;
+      case 'div_all': return 12;
+      case 'div_basic': return 10;
+      case 'mul_2_9': return 10;
+      default: return 8;
     }
   }
 
@@ -953,7 +969,6 @@
     startTimer();
   }
 
-  /* 題目產生引擎 */
   function generateQuestion() {
     let a = 0, b = 0, maxRange = 10, isPlus = Math.random() > 0.45;
 
@@ -1026,10 +1041,36 @@
     }
     const optionArr = Array.from(options).sort(() => Math.random() - 0.5);
 
+    // 重設按鈕狀態與數值
     for (let i = 0; i < 4; i++) {
       const btn = document.getElementById(`opt-${i}`);
       btn.textContent = optionArr[i];
       btn.dataset.val = optionArr[i];
+      btn.classList.remove('eliminated');
+      btn.disabled = false;
+    }
+
+    // 💡 智慧提示生效判定：排除 2 個錯誤選項
+    if (hintCount > 0) {
+      hintCount--;
+      updateStatusBadges();
+      
+      const wrongIndices = [];
+      for (let i = 0; i < 4; i++) {
+        if (optionArr[i] !== correctAnswer) {
+          wrongIndices.push(i);
+        }
+      }
+      
+      // 隨機選 2 個錯誤選項進行排除
+      wrongIndices.sort(() => Math.random() - 0.5);
+      const toEliminate = wrongIndices.slice(0, 2);
+      
+      toEliminate.forEach(idx => {
+        const btn = document.getElementById(`opt-${idx}`);
+        btn.classList.add('eliminated');
+        btn.disabled = true;
+      });
     }
   }
 
@@ -1099,9 +1140,10 @@
       let reward = baseRewards[currentDifficulty] || 10;
       
       if (comboCount > 1) reward += (comboCount * 2);
-      if (activeStar) {
+
+      if (starTurnsLeft > 0) {
         reward *= 3;
-        activeStar = false;
+        starTurnsLeft--;
       }
 
       totalCoins += reward;
@@ -1181,13 +1223,13 @@
         document.getElementById('battle-stage').appendChild(hitSpark);
         setTimeout(() => hitSpark.remove(), 320);
 
-        if (activeShield) {
-          activeShield = false;
+        if (shieldCount > 0) {
+          shieldCount--;
           updateStatusBadges();
           sndPowerUp();
           playerBox.classList.remove('idle-anim');
           playerBox.classList.add('player-hurt-anim');
-          qText.textContent = "🛡️ 護盾抵擋傷害！";
+          qText.textContent = `🛡️ 護盾抵擋！(剩餘 ${shieldCount} 層)`;
           setTimeout(nextTurn, 1000);
           return;
         }
@@ -1218,7 +1260,7 @@
     appEl.classList.add('screen-shake');
   }
 
-  /* ================= 多角色商城系統 ================= */
+  /* ================= 多角色與連續購買商城系統 ================= */
   function openShop() {
     clearInterval(timerInterval);
     document.getElementById('shop-coin-display').textContent = totalCoins;
@@ -1227,8 +1269,13 @@
   }
 
   function refreshShopUI() {
+    document.getElementById('info-shield').textContent = `免死金牌：抵擋 1 次扣血 (目前持有: ${shieldCount} 層)`;
+    document.getElementById('info-star').textContent = `獲得 3 倍金幣獎勵 (目前剩餘: ${starTurnsLeft} 題)`;
+    document.getElementById('info-clock').textContent = `下一題增加作答時間 (目前累積: +${extraTimeAdded} 秒)`;
+    document.getElementById('info-hint').textContent = `自動排除 2 個錯誤答案 (目前持有: ${hintCount} 次)`;
+
     const skins = ['mario', 'luigi', 'peach', 'yoshi', 'cinnamon', 'marroncream'];
-    const prices = { luigi: 60, peach: 80, yoshi: 100, cinnamon: 150, marroncream: 150 };
+    const prices = { mario: 0, luigi: 60, peach: 80, yoshi: 100, cinnamon: 150, marroncream: 150 };
 
     skins.forEach(s => {
       const btn = document.getElementById(`btn-skin-${s}`);
@@ -1238,7 +1285,7 @@
         btn.textContent = "使用中";
         btn.disabled = true;
         btn.style.background = "#22c55e";
-      } else if (unlockedSkins.includes(s)) {
+      } else if (unlockedSkins.includes(s) || s === 'mario') {
         btn.textContent = "切換";
         btn.disabled = false;
         btn.style.background = "#f59e0b";
@@ -1295,12 +1342,18 @@
     document.getElementById('shop-coin-display').textContent = totalCoins;
     sndPowerUp();
 
-    if (type === 'shield') activeShield = true;
-    else if (type === 'star') activeStar = true;
-    else if (type === 'clock') extraTimeAdded += 5;
+    if (type === 'shield') {
+      shieldCount++;
+    } else if (type === 'star') {
+      starTurnsLeft++;
+    } else if (type === 'clock') {
+      extraTimeAdded += 5;
+    } else if (type === 'hint') {
+      hintCount++;
+    }
 
     updateStatusBadges();
-    alert("🎉 購買成功！道具已生效！");
+    refreshShopUI();
   }
 
   /* ================= 結束結算、通關音樂、星光煙火與回到主畫面 ================= */
@@ -1313,6 +1366,7 @@
     qText.textContent = isWin ? "🎆 擊敗庫巴！通關成功！ 🎆" : "💀 再接再厲！";
     for (let i = 0; i < 4; i++) {
       document.getElementById(`opt-${i}`).textContent = "-";
+      document.getElementById(`opt-${i}`).classList.remove('eliminated');
     }
 
     if (isWin) {
