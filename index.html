@@ -56,11 +56,11 @@
 
   #header {
     background: rgba(0, 0, 0, 0.85);
-    padding: 10px 10px;
+    padding: 10px 6px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
     color: #ffffff;
     z-index: 30;
@@ -74,7 +74,7 @@
     font-family: inherit;
     font-size: 11px;
     font-weight: 700;
-    padding: 5px 8px;
+    padding: 4px 6px;
     border-radius: 8px;
     cursor: pointer;
   }
@@ -541,6 +541,27 @@
   .lb-table { width: 100%; font-size: 13px; font-weight: 700; margin-bottom: 14px; border-collapse: collapse; }
   .lb-table th { color: #38bdf8; padding: 6px 4px; border-bottom: 2px solid #334155; }
   .lb-table td { padding: 6px 4px; text-align: center; border-bottom: 1px solid #1e293b; }
+
+  /* 📝 錯題回顧本專屬卡片樣式 */
+  .review-scroll-list {
+    width: 100%;
+    max-height: 380px;
+    overflow-y: auto;
+    padding-right: 4px;
+    margin-bottom: 12px;
+  }
+  .review-item-card {
+    background: #1e293b;
+    border: 2px solid #334155;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    text-align: left;
+  }
+  .review-q { font-size: 18px; color: #fde047; font-weight: 700; margin-bottom: 4px; }
+  .review-ans-row { font-size: 13px; font-weight: 700; display: flex; gap: 14px; }
+  .review-wrong { color: #ef4444; }
+  .review-right { color: #22c55e; }
 </style>
 </head>
 <body>
@@ -551,6 +572,7 @@
     <div>RD <span id="round-count">1</span>/10</div>
     <div><span id="lives-display">❤️❤️❤️</span></div>
     <button class="btn-top" onclick="openShop()">🏪 商店</button>
+    <button class="btn-top" onclick="openReviewModal()">📝 錯題</button>
     <button class="btn-top" id="bgm-toggle-btn" onclick="toggleBGM()">🎵 ON</button>
     <button class="btn-top" onclick="showDifficultyMenu()">⚙️ 難度</button>
     <button class="btn-top" onclick="openLeaderboard()">🏆 榜</button>
@@ -670,6 +692,14 @@
     <button class="mode-btn" style="background:#dc2626; margin-top:8px;" onclick="closeShop()">離開商店</button>
   </div>
 
+  <!-- 📝 錯題回顧本視窗 -->
+  <div id="review-modal" class="modal-screen" style="display:none;">
+    <h1 class="modal-title">📝 錯題回顧本</h1>
+    <p class="modal-desc" id="review-desc">回顧剛才答錯的題目，下次一定能算對！</p>
+    <div class="review-scroll-list" id="review-list-box"></div>
+    <button class="mode-btn" style="background:#0284c7;" onclick="closeReviewModal()">我知道了，返回主選單</button>
+  </div>
+
   <!-- 排行榜視窗 -->
   <div id="lb-modal" class="modal-screen" style="display:none;">
     <h1 class="modal-title">🏆 TOP 10 冒險英雄榜</h1>
@@ -698,7 +728,6 @@
 
   /* ================= 狀態管理與數值安全防呆 ================= */
   let rawCoins = parseInt(localStorage.getItem('mario_total_coins'), 10);
-  // 若原本為 NaN 或損壞，自動修正為 100 金幣
   let totalCoins = (Number.isFinite(rawCoins) && rawCoins >= 0) ? rawCoins : 100;
   localStorage.setItem('mario_total_coins', totalCoins);
 
@@ -723,8 +752,12 @@
   let bossHp = 5;
   const BOSS_MAX_HP = 5;
   let correctAnswer = 0;
+  let currentQuestionFormula = ""; // 當前題目文字
   let isActionLocked = false;
   let comboCount = 0;
+
+  // 📝 當局錯題暫存陣列
+  let sessionWrongQuestions = [];
 
   let timeLeft = 8;
   let maxTime = 8;
@@ -842,6 +875,7 @@
   const livesDisplay = document.getElementById('lives-display');
   const modalBox = document.getElementById('modal-box');
   const shopModal = document.getElementById('shop-modal');
+  const reviewModal = document.getElementById('review-modal');
   const lbModal = document.getElementById('lb-modal');
   const playerBox = document.getElementById('player-box');
   const enemyBox = document.getElementById('enemy-box');
@@ -921,6 +955,7 @@
     lives = 3;
     bossHp = BOSS_MAX_HP;
     comboCount = 0;
+    sessionWrongQuestions = []; // 新局重置錯題記錄
     isActionLocked = false;
 
     roundCount.textContent = `${currentRound}`;
@@ -931,6 +966,7 @@
 
     modalBox.style.display = 'none';
     shopModal.style.display = 'none';
+    reviewModal.style.display = 'none';
     lbModal.style.display = 'none';
     nextTurn();
   }
@@ -987,42 +1023,48 @@
       b = isPlus ? Math.floor(Math.random() * (10 - a)) : Math.floor(Math.random() * (a + 1));
       maxRange = 10;
       correctAnswer = isPlus ? a + b : a - b;
-      qText.textContent = `${a} ${isPlus ? '+' : '-'} ${b} = ?`;
+      currentQuestionFormula = `${a} ${isPlus ? '+' : '-'} ${b}`;
+      qText.textContent = `${currentQuestionFormula} = ?`;
     } 
     else if (currentDifficulty === '100') {
       a = isPlus ? Math.floor(Math.random() * 50) + 10 : Math.floor(Math.random() * 60) + 20;
       b = isPlus ? Math.floor(Math.random() * (100 - a)) : Math.floor(Math.random() * (a - 5)) + 1;
       maxRange = 100;
       correctAnswer = isPlus ? a + b : a - b;
-      qText.textContent = `${a} ${isPlus ? '+' : '-'} ${b} = ?`;
+      currentQuestionFormula = `${a} ${isPlus ? '+' : '-'} ${b}`;
+      qText.textContent = `${currentQuestionFormula} = ?`;
     } 
     else if (currentDifficulty === '1000') {
       a = isPlus ? Math.floor(Math.random() * 450) + 50 : Math.floor(Math.random() * 500) + 200;
       b = isPlus ? Math.floor(Math.random() * (1000 - a)) : Math.floor(Math.random() * (a - 20)) + 10;
       maxRange = 1000;
       correctAnswer = isPlus ? a + b : a - b;
-      qText.textContent = `${a} ${isPlus ? '+' : '-'} ${b} = ?`;
+      currentQuestionFormula = `${a} ${isPlus ? '+' : '-'} ${b}`;
+      qText.textContent = `${currentQuestionFormula} = ?`;
     }
     else if (currentDifficulty === 'mul_2_5') {
       a = Math.floor(Math.random() * 4) + 2;
       b = Math.floor(Math.random() * 9) + 1;
       maxRange = 45;
       correctAnswer = a * b;
-      qText.textContent = `${a} × ${b} = ?`;
+      currentQuestionFormula = `${a} × ${b}`;
+      qText.textContent = `${currentQuestionFormula} = ?`;
     }
     else if (currentDifficulty === 'mul_5_6') {
       a = Math.floor(Math.random() * 2) + 5;
       b = Math.floor(Math.random() * 9) + 1;
       maxRange = 54;
       correctAnswer = a * b;
-      qText.textContent = `${a} × ${b} = ?`;
+      currentQuestionFormula = `${a} × ${b}`;
+      qText.textContent = `${currentQuestionFormula} = ?`;
     }
     else if (currentDifficulty === 'mul_2_9') {
       a = Math.floor(Math.random() * 8) + 2;
       b = Math.floor(Math.random() * 9) + 1;
       maxRange = 81;
       correctAnswer = a * b;
-      qText.textContent = `${a} × ${b} = ?`;
+      currentQuestionFormula = `${a} × ${b}`;
+      qText.textContent = `${currentQuestionFormula} = ?`;
     }
     else if (currentDifficulty === 'div_basic') {
       const divisor = Math.floor(Math.random() * 4) + 2;
@@ -1030,7 +1072,8 @@
       const dividend = divisor * quotient;
       maxRange = 9;
       correctAnswer = quotient;
-      qText.textContent = `${dividend} ÷ ${divisor} = ?`;
+      currentQuestionFormula = `${dividend} ÷ ${divisor}`;
+      qText.textContent = `${currentQuestionFormula} = ?`;
     }
     else if (currentDifficulty === 'div_all') {
       const divisor = Math.floor(Math.random() * 8) + 2;
@@ -1038,7 +1081,8 @@
       const dividend = divisor * quotient;
       maxRange = 9;
       correctAnswer = quotient;
-      qText.textContent = `${dividend} ÷ ${divisor} = ?`;
+      currentQuestionFormula = `${dividend} ÷ ${divisor}`;
+      qText.textContent = `${currentQuestionFormula} = ?`;
     }
 
     const options = new Set([correctAnswer]);
@@ -1213,6 +1257,14 @@
       }, 920);
 
     } else {
+      /* 📝 記錄錯題資訊 */
+      sessionWrongQuestions.push({
+        q: `${currentQuestionFormula} = ?`,
+        user: chosen === -999 ? "超時未答" : chosen,
+        correct: correctAnswer
+      });
+      localStorage.setItem('mario_last_wrong_questions', JSON.stringify(sessionWrongQuestions));
+
       isActionLocked = true;
       comboCount = 0;
       updateStatusBadges();
@@ -1270,7 +1322,7 @@
     appEl.classList.add('screen-shake');
   }
 
-  /* ================= 多角色與連續購買商城系統（嚴格防呆） ================= */
+  /* ================= 多角色與連續購買商城系統 ================= */
   function openShop() {
     clearInterval(timerInterval);
     if (!Number.isFinite(totalCoins) || totalCoins < 0) totalCoins = 0;
@@ -1342,7 +1394,6 @@
     if (!isActionLocked && modalBox.style.display === 'none') startTimer();
   }
 
-  /* 道具購買：嚴格 NaN 防呆與扣款 */
   function buyItem(type, price) {
     if (!Number.isFinite(totalCoins) || totalCoins < price) {
       alert("🪙 金幣不夠喔！多答對題目賺取金幣吧！");
@@ -1371,7 +1422,44 @@
     refreshShopUI();
   }
 
-  /* ================= 結束結算、通關音樂、星光煙火與回到主畫面 ================= */
+  /* ================= 📝 錯題回顧本視窗管理 ================= */
+  function openReviewModal() {
+    clearInterval(timerInterval);
+    getAudioContext();
+    
+    const list = JSON.parse(localStorage.getItem('mario_last_wrong_questions') || '[]');
+    const box = document.getElementById('review-list-box');
+    const desc = document.getElementById('review-desc');
+
+    if (list.length === 0) {
+      desc.textContent = "太厲害了！目前沒有任何錯題紀錄 🌟";
+      box.innerHTML = `<div style="padding: 24px 0; color: #4ade80; font-size: 16px; font-weight: 700;">💯 全部答對！保持這個好成績！</div>`;
+    } else {
+      desc.textContent = `共記錄了 ${list.length} 題，好好複習一下吧：`;
+      box.innerHTML = list.map((item, idx) => `
+        <div class="review-item-card">
+          <div class="review-q">第 ${idx + 1} 題：${item.q}</div>
+          <div class="review-ans-row">
+            <span class="review-wrong">❌ 你的答案: ${item.user}</span>
+            <span class="review-right">⭕ 正確答案: ${item.correct}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    reviewModal.style.display = 'flex';
+  }
+
+  function closeReviewModal() {
+    reviewModal.style.display = 'none';
+    if (!isActionLocked && modalBox.style.display === 'none') {
+      startTimer();
+    } else {
+      showDifficultyMenu();
+    }
+  }
+
+  /* ================= 結束結算、通關音樂、星光煙火與錯題回顧 ================= */
   function endBattle(isWin) {
     clearInterval(timerInterval);
     isActionLocked = true;
@@ -1392,14 +1480,20 @@
       launchVictoryFireworks();
     }
 
-    const delayTime = isWin ? 3800 : 2800;
+    const delayTime = isWin ? 3800 : 2600;
 
     setTimeout(() => {
       bgmAudio.pause();
       bossAudio.pause();
       winAudio.pause();
       appEl.classList.remove('boss-theme');
-      showDifficultyMenu();
+
+      // 若當局有錯題，自動彈出「錯題回顧本」供小朋友訂正學習
+      if (sessionWrongQuestions.length > 0) {
+        openReviewModal();
+      } else {
+        showDifficultyMenu();
+      }
     }, delayTime);
   }
 
