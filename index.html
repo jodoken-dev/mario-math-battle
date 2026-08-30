@@ -116,7 +116,7 @@
     pointer-events: none;
   }
 
-  /* 遊戲王背景元素（魔法陣） */
+  /* 遊戲王背景元素 */
   .theme-yugi .yugi-bg-circle {
     position: absolute;
     top: 50%;
@@ -478,7 +478,7 @@
 </div>
 
 <script>
-  /* ================= 兩套完整角色向量美術 (瑪利歐 & 遊戲王) ================= */
+  /* ================= 兩套完整角色向量美術 ================= */
   const SVGS = {
     mario: `
       <svg viewBox="0 0 100 120" width="76" height="90">
@@ -512,39 +512,30 @@
         <ellipse cx="68" cy="80" rx="14" ry="8" fill="#000"/>
       </svg>
     `,
-    // 遊戲王主角（武藤遊戲 / 暗遊戲髮型與千年積木）
     yugi: `
       <svg viewBox="0 0 100 120" width="76" height="92">
-        <!-- 經典星型金色與紫紅色尖刺髮型 -->
         <polygon points="50,5 30,30 50,22 70,30" fill="#facc15" stroke="#000" stroke-width="2"/>
         <polygon points="20,15 10,45 30,38" fill="#dc2626" stroke="#000" stroke-width="2"/>
         <polygon points="80,15 90,45 70,38" fill="#dc2626" stroke="#000" stroke-width="2"/>
         <polygon points="50,15 25,40 50,30 75,40" fill="#facc15" stroke="#000" stroke-width="2"/>
-        <!-- 臉部 -->
         <ellipse cx="50" cy="55" rx="20" ry="18" fill="#fed7aa" stroke="#000" stroke-width="2.5"/>
         <ellipse cx="42" cy="54" rx="4" ry="6" fill="#9333ea" stroke="#000" stroke-width="1.5"/>
         <ellipse cx="58" cy="54" rx="4" ry="6" fill="#9333ea" stroke="#000" stroke-width="1.5"/>
-        <!-- 深藍皮衣外套 -->
         <path d="M 28 72 L 72 72 L 68 110 L 32 110 Z" fill="#1e1b4b" stroke="#000" stroke-width="3"/>
-        <!-- 千年積木項鍊 -->
         <polygon points="50,78 40,95 60,95" fill="#facc15" stroke="#000" stroke-width="2"/>
         <circle cx="50" cy="88" r="2.5" fill="#000"/>
       </svg>
     `,
-    // 決鬥怪獸：栗子球 (Kuriboh)
     kuriboh: `
       <svg viewBox="0 0 100 100" width="68" height="68">
-        <!-- 毛茸茸深棕身體 -->
         <circle cx="50" cy="50" r="35" fill="#78350f" stroke="#000" stroke-width="3"/>
         <ellipse cx="50" cy="20" rx="10" ry="8" fill="#78350f"/>
         <ellipse cx="25" cy="30" rx="8" ry="10" fill="#78350f"/>
         <ellipse cx="75" cy="30" rx="8" ry="10" fill="#78350f"/>
-        <!-- 綠色大眼萌 -->
         <ellipse cx="38" cy="48" rx="8" ry="12" fill="#22c55e" stroke="#000" stroke-width="2"/>
         <ellipse cx="62" cy="48" rx="8" ry="12" fill="#22c55e" stroke="#000" stroke-width="2"/>
         <circle cx="39" cy="46" r="3" fill="#fff"/>
         <circle cx="63" cy="46" r="3" fill="#fff"/>
-        <!-- 小爪子 -->
         <ellipse cx="35" cy="80" rx="8" ry="5" fill="#ca8a04" stroke="#000" stroke-width="2"/>
         <ellipse cx="65" cy="80" rx="8" ry="5" fill="#ca8a04" stroke="#000" stroke-width="2"/>
       </svg>
@@ -556,7 +547,7 @@
     `
   };
 
-  let currentTheme = 'mario'; // 'mario' 或 'yugi'
+  let currentTheme = 'mario';
 
   function toggleTheme() {
     currentTheme = currentTheme === 'mario' ? 'yugi' : 'mario';
@@ -577,7 +568,7 @@
     }
   }
 
-  /* ================= 音訊載入與音效控制 ================= */
+  /* ================= 8-bit 音效與輸掉 (Game Over) 音樂引擎 ================= */
   const bgmAudio = new Audio('bgm.mp3');
   bgmAudio.loop = true;
   bgmAudio.volume = 0.55;
@@ -626,8 +617,29 @@
     [300, 350, 400, 450].forEach((f, i) => setTimeout(() => playTone(f, 'sine', 0.08, 0.12), i * 35));
   }
 
+  // 經典瑪利歐 Game Over / 死亡落下音樂
+  function sndGameOver() {
+    const notes = [
+      [493.88, 0.16], // B4
+      [587.33, 0.16], // D5
+      [493.88, 0.16], // B4
+      [440.00, 0.22], // A4
+      [392.00, 0.22], // G4
+      [349.23, 0.25], // F4
+      [329.63, 0.45]  // E4 (長尾音)
+    ];
+    let delay = 0;
+    notes.forEach(([freq, dur]) => {
+      setTimeout(() => {
+        playTone(freq, 'triangle', dur * 0.95, 0.22);
+      }, delay);
+      delay += dur * 1000 * 0.92;
+    });
+  }
+
   function startBGM() {
     if (isBGMEnabled) {
+      bgmAudio.currentTime = 0;
       bgmAudio.play().catch(e => console.log('等待互動'));
     }
   }
@@ -852,9 +864,14 @@
       updateLivesUI();
       sndWrong();
       triggerScreenShake();
+      
       if (lives <= 0) {
         isActionLocked = true;
-        setTimeout(() => endBattle(false), 450);
+        bgmAudio.pause(); // 暫停背景音樂
+        setTimeout(() => {
+          sndGameOver(); // 播放輸掉音效
+        }, 150);
+        setTimeout(() => endBattle(false), 1600);
       }
     }
   }
@@ -866,7 +883,7 @@
   }
 
   function endBattle(isWin) {
-    const name = prompt(isWin ? "🎉 恭喜通關！請輸入名字紀錄戰績：" : "冒險結束！請輸入名字：", "冒險高手") || "英雄";
+    const name = prompt(isWin ? "🎉 恭喜通關！請輸入名字紀錄戰績：" : "💀 遊戲結束！請輸入名字：", "冒險高手") || "英雄";
     saveScore(name, totalCoins, currentDifficulty);
     openLeaderboard();
   }
