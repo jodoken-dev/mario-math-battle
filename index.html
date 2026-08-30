@@ -242,7 +242,6 @@
     box-shadow: inset 6px 0 0 #64748b, inset -6px 0 0 #0f172a;
   }
 
-  /* 角色與怪物定位容器 */
   #player-box {
     position: absolute;
     left: 28px;
@@ -347,6 +346,19 @@
     100% { transform: translate3d(0, 0, 0); opacity: 1; filter: brightness(1); }
   }
 
+  /* 💀 經典傳統瑪利歐陣亡動作：跳起後垂直跌出畫面深淵 */
+  .player-die-anim {
+    z-index: 99 !important;
+    animation: classicMarioDeath 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+  }
+  @keyframes classicMarioDeath {
+    0% { transform: translate3d(0, 0, 0); }
+    15% { transform: translate3d(0, 0, 0); }
+    35% { transform: translate3d(0, -140px, 0); }
+    55% { transform: translate3d(0, -120px, 0); }
+    100% { transform: translate3d(0, 480px, 0); opacity: 0; }
+  }
+
   .hit-spark {
     position: absolute;
     width: 65px;
@@ -360,7 +372,6 @@
     100% { transform: scale(1.4) rotate(45deg); opacity: 0; }
   }
 
-  /* 溫和彩色星光粒子（居中綻放） */
   .firework-particle {
     position: absolute;
     width: 8px;
@@ -895,7 +906,7 @@
     updateEnemyVisual();
     updateBGMState();
 
-    playerBox.classList.remove('player-stomp-anim', 'player-hurt-anim');
+    playerBox.classList.remove('player-stomp-anim', 'player-hurt-anim', 'player-die-anim');
     playerBox.classList.add('idle-anim');
 
     enemyBox.classList.remove('enemy-squished', 'idle-anim', 'enemy-emerge-anim', 'enemy-attack-anim');
@@ -978,7 +989,6 @@
     }
   }
 
-  /* 溫和星光煙火特效（發射範圍位於畫面中央正中心） */
   function spawnFirework(x, y) {
     const stage = document.getElementById('battle-stage');
     const colors = ['#ef4444', '#f59e0b', '#38bdf8', '#4ade80', '#ec4899', '#fde047', '#a855f7'];
@@ -1005,7 +1015,6 @@
     }
   }
 
-  /* 🎆 精確定位在畫面正中央區域（紅圈範圍內） */
   function launchVictoryFireworks() {
     const stage = document.getElementById('battle-stage');
     const cx = stage.clientWidth / 2;
@@ -1116,9 +1125,6 @@
         sndWrong();
         triggerScreenShake();
 
-        playerBox.classList.remove('idle-anim');
-        playerBox.classList.add('player-hurt-anim');
-
         const hitSpark = document.createElement('div');
         hitSpark.className = 'hit-spark';
         hitSpark.innerHTML = SPRITES.spark;
@@ -1131,6 +1137,8 @@
           activeShield = false;
           updateStatusBadges();
           sndPowerUp();
+          playerBox.classList.remove('idle-anim');
+          playerBox.classList.add('player-hurt-anim');
           qText.textContent = "🛡️ 護盾抵擋傷害！";
           setTimeout(nextTurn, 1000);
           return;
@@ -1140,13 +1148,17 @@
         updateLivesUI();
 
         if (lives <= 0) {
+          // 💀 經典瑪利歐陣亡：彈起後掉落深淵
+          playerBox.classList.remove('idle-anim', 'player-hurt-anim');
+          playerBox.classList.add('player-die-anim');
+
           bgmAudio.pause();
           bossAudio.pause();
-          setTimeout(() => {
-            sndGameOver();
-          }, 120);
+          sndGameOver();
           endBattle(false);
         } else {
+          playerBox.classList.remove('idle-anim');
+          playerBox.classList.add('player-hurt-anim');
           setTimeout(nextTurn, 1000);
         }
       }, 420);
@@ -1261,12 +1273,11 @@
       bgmAudio.pause();
       winAudio.currentTime = 0;
       winAudio.play().catch(e => console.log('通關音效待互動'));
-
-      // 觸發正中央星光煙火特效
       launchVictoryFireworks();
     }
 
-    const delayTime = isWin ? 3800 : 2000;
+    // 陣亡停留 2.8 秒讓跳起掉落動畫與 Game Over 音效完整播放
+    const delayTime = isWin ? 3800 : 2800;
 
     setTimeout(() => {
       bgmAudio.pause();
