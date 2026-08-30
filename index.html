@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🍄 瑪利歐數學大冒險</title>
+<title>🍄 數學大冒險 & 決鬥</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   * {
@@ -33,11 +33,16 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    background: #5c94fc;
     border: 6px solid #000000;
     box-shadow: 0 10px 0 #000000;
     overflow: hidden;
+    transition: background 0.3s;
   }
+
+  /* 瑪利歐風格背景 */
+  .theme-mario #game-app { background: #5c94fc; }
+  /* 遊戲王風格背景 */
+  .theme-yugi #game-app { background: radial-gradient(circle at center, #3b0764 0%, #090514 100%); }
 
   .screen-shake {
     animation: shakeEffect 0.25s cubic-bezier(.36,.07,.19,.97) both;
@@ -50,12 +55,12 @@
   }
 
   #header {
-    background: rgba(0, 0, 0, 0.75);
-    padding: 10px 10px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 10px 8px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 11px;
+    font-size: 10px;
     color: #ffffff;
     text-shadow: 2px 2px #000000;
     z-index: 20;
@@ -67,9 +72,9 @@
     border: 2px solid #ffffff;
     color: #000;
     font-family: inherit;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: bold;
-    padding: 5px 6px;
+    padding: 4px 5px;
     border-radius: 6px;
     cursor: pointer;
   }
@@ -82,7 +87,8 @@
     overflow: hidden;
   }
 
-  .clouds-layer {
+  /* 瑪利歐背景元素 */
+  .theme-mario .clouds-layer {
     position: absolute;
     top: 20px;
     left: 0;
@@ -101,7 +107,7 @@
     100% { transform: translateX(-50%); }
   }
 
-  .hills-layer {
+  .theme-mario .hills-layer {
     position: absolute;
     bottom: 36px;
     width: 100%;
@@ -110,46 +116,79 @@
     pointer-events: none;
   }
 
+  /* 遊戲王背景元素（魔法陣） */
+  .theme-yugi .yugi-bg-circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 320px;
+    height: 320px;
+    transform: translate(-50%, -50%);
+    border: 3px dashed #d97706;
+    border-radius: 50%;
+    box-shadow: 0 0 25px #b45309, inset 0 0 25px #b45309;
+    opacity: 0.4;
+    animation: rotateMagic 20s linear infinite;
+    z-index: 1;
+  }
+  @keyframes rotateMagic {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  /* 題目框 */
   .question-block {
     position: absolute;
     top: 15px;
     left: 5%;
     width: 90%;
-    background: #fcb040;
-    border: 4px solid #000000;
-    box-shadow: inset -4px -4px 0 #8c4000, inset 4px 4px 0 #ffe0a0, 0 5px 0 rgba(0,0,0,0.4);
-    padding: 12px 10px;
     border-radius: 10px;
     text-align: center;
+    padding: 12px 10px;
     animation: floatBlock 2.2s infinite ease-in-out;
     z-index: 15;
   }
+  .theme-mario .question-block {
+    background: #fcb040;
+    border: 4px solid #000000;
+    box-shadow: inset -4px -4px 0 #8c4000, inset 4px 4px 0 #ffe0a0, 0 5px 0 rgba(0,0,0,0.4);
+  }
+  .theme-yugi .question-block {
+    background: #1e1b4b;
+    border: 3px solid #f59e0b;
+    box-shadow: 0 0 15px #f59e0b, inset 0 0 10px #6366f1;
+  }
+
   @keyframes floatBlock {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-5px); }
   }
+
   .q-math {
     font-size: 22px;
-    color: #000000;
     letter-spacing: 2px;
     font-weight: 900;
   }
+  .theme-mario .q-math { color: #000000; }
+  .theme-yugi .q-math { color: #fde047; text-shadow: 0 0 8px #f59e0b; }
 
-  /* 地面與水管 */
+  /* 地面與平台 */
   .ground {
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
     height: 38px;
-    background: repeating-linear-gradient(
-      45deg,
-      #c84c0c, #c84c0c 12px,
-      #000 12px, #000 14px,
-      #fc9838 14px, #fc9838 24px
-    );
     border-top: 4px solid #000;
     z-index: 10;
+  }
+  .theme-mario .ground {
+    background: repeating-linear-gradient(45deg, #c84c0c, #c84c0c 12px, #000 12px, #000 14px, #fc9838 14px, #fc9838 24px);
+  }
+  .theme-yugi .ground {
+    background: linear-gradient(to top, #0f172a, #312e81);
+    border-top: 3px solid #6366f1;
+    box-shadow: 0 0 15px #6366f1;
   }
 
   .pipe {
@@ -158,12 +197,14 @@
     bottom: 38px;
     width: 86px;
     height: 56px;
+    z-index: 9;
+  }
+  .theme-mario .pipe {
     background: #00a800;
     border: 4px solid #000;
     box-shadow: inset 6px 0 0 #54f054, inset -6px 0 0 #005400;
-    z-index: 9;
   }
-  .pipe::before {
+  .theme-mario .pipe::before {
     content: '';
     position: absolute;
     top: -16px;
@@ -174,14 +215,34 @@
     border: 4px solid #000;
     box-shadow: inset 6px 0 0 #54f054, inset -6px 0 0 #005400;
   }
+  .theme-yugi .pipe {
+    background: #1e1b4b;
+    border: 3px solid #eab308;
+    box-shadow: 0 0 10px #eab308;
+    border-radius: 6px;
+  }
+  .theme-yugi .pipe::before {
+    content: 'SUMMON';
+    position: absolute;
+    top: -16px;
+    left: -3px;
+    width: 86px;
+    height: 16px;
+    background: #eab308;
+    color: #000;
+    font-size: 8px;
+    line-height: 16px;
+    text-align: center;
+    font-weight: bold;
+  }
 
-  /* 角色定位：精確貼在地面與水管上 */
+  /* 角色與怪物定位 */
   #player-box {
     position: absolute;
-    left: 30px;
+    left: 26px;
     bottom: 38px;
-    width: 76px;
-    height: 90px;
+    width: 80px;
+    height: 95px;
     z-index: 12;
     transform-origin: bottom center;
   }
@@ -189,10 +250,10 @@
   #enemy-box {
     position: absolute;
     right: 34px;
-    bottom: 94px; /* 對準水管口上方 */
+    bottom: 94px;
     width: 68px;
     height: 68px;
-    z-index: 8; /* 在水管後方升起 */
+    z-index: 8;
     transform-origin: bottom center;
   }
 
@@ -204,7 +265,6 @@
     100% { transform: translateY(-4px); }
   }
 
-  /* 香菇從水管由下往上升起動畫 */
   .enemy-emerge-anim {
     animation: pipeEmerge 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
   }
@@ -214,7 +274,6 @@
     100% { transform: translateY(0); opacity: 1; }
   }
 
-  /* 瑪利歐跳躍踩踏 */
   .player-stomp-anim {
     animation: heroJumpStomp 0.85s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important;
   }
@@ -226,7 +285,6 @@
     100% { transform: translate3d(0, 0, 0); }
   }
 
-  /* 香菇被踩扁（變半扁並沉入水管） */
   .enemy-squished {
     animation: squishAnim 0.45s ease forwards !important;
   }
@@ -263,10 +321,7 @@
   }
 
   .btn-option {
-    background: #e52521;
     border: 4px solid #ffffff;
-    box-shadow: inset -4px -4px 0 #800000, inset 4px 4px 0 #ff9999, 0 4px 0 #000;
-    color: #ffffff;
     font-family: inherit;
     font-size: 24px;
     font-weight: 900;
@@ -274,6 +329,17 @@
     border-radius: 10px;
     cursor: pointer;
     text-align: center;
+  }
+  .theme-mario .btn-option {
+    background: #e52521;
+    box-shadow: inset -4px -4px 0 #800000, inset 4px 4px 0 #ff9999, 0 4px 0 #000;
+    color: #ffffff;
+  }
+  .theme-yugi .btn-option {
+    background: #1e1b4b;
+    border-color: #f59e0b;
+    box-shadow: inset 0 0 10px #4338ca, 0 4px 0 #000;
+    color: #fde047;
   }
   .btn-option:active { transform: translateY(3px); box-shadow: none; }
 
@@ -343,13 +409,14 @@
   .lb-table td { padding: 6px 4px; text-align: center; border-bottom: 1px solid #1e293b; }
 </style>
 </head>
-<body>
+<body class="theme-mario">
 
 <div id="game-app">
   <div id="header">
     <div>🪙 <span id="coin-total">0</span></div>
     <div>RD <span id="round-count">1</span>/5</div>
     <div><span id="lives-display">❤️❤️❤️</span></div>
+    <button class="btn-top" id="theme-btn" onclick="toggleTheme()">🎨 換皮</button>
     <button class="btn-top" id="bgm-toggle-btn" onclick="toggleBGM()">🎵 ON</button>
     <button class="btn-top" onclick="showDifficultyMenu()">⚙️ 難度</button>
     <button class="btn-top" onclick="openLeaderboard()">🏆 榜</button>
@@ -357,6 +424,7 @@
 
   <div id="battle-stage">
     <div class="clouds-layer"></div>
+    <div class="yugi-bg-circle"></div>
     <div class="hills-layer">
       <svg width="100%" height="100%" viewBox="0 0 400 100" preserveAspectRatio="none">
         <ellipse cx="60" cy="100" rx="90" ry="60" fill="#008800" stroke="#000" stroke-width="3"/>
@@ -370,7 +438,6 @@
       <div class="q-math" id="q-text">-- + --</div>
     </div>
 
-    <!-- 角色與香菇精準定位在地面與水管上 -->
     <div class="sprite-box idle-anim" id="player-box"></div>
     <div class="sprite-box" id="enemy-box"></div>
 
@@ -386,7 +453,7 @@
   </div>
 
   <div id="modal-box" class="modal-screen">
-    <h1 class="modal-title">SUPER MARIO<br>MATH BATTLE</h1>
+    <h1 class="modal-title" id="menu-title">SUPER MARIO<br>MATH BATTLE</h1>
     <p class="modal-desc">請選擇訓練等級：</p>
     
     <div class="mode-group-title">➕ ➖ 加減法冒險</div>
@@ -411,6 +478,7 @@
 </div>
 
 <script>
+  /* ================= 兩套完整角色向量美術 (瑪利歐 & 遊戲王) ================= */
   const SVGS = {
     mario: `
       <svg viewBox="0 0 100 120" width="76" height="90">
@@ -444,12 +512,70 @@
         <ellipse cx="68" cy="80" rx="14" ry="8" fill="#000"/>
       </svg>
     `,
+    // 遊戲王主角（武藤遊戲 / 暗遊戲髮型與千年積木）
+    yugi: `
+      <svg viewBox="0 0 100 120" width="76" height="92">
+        <!-- 經典星型金色與紫紅色尖刺髮型 -->
+        <polygon points="50,5 30,30 50,22 70,30" fill="#facc15" stroke="#000" stroke-width="2"/>
+        <polygon points="20,15 10,45 30,38" fill="#dc2626" stroke="#000" stroke-width="2"/>
+        <polygon points="80,15 90,45 70,38" fill="#dc2626" stroke="#000" stroke-width="2"/>
+        <polygon points="50,15 25,40 50,30 75,40" fill="#facc15" stroke="#000" stroke-width="2"/>
+        <!-- 臉部 -->
+        <ellipse cx="50" cy="55" rx="20" ry="18" fill="#fed7aa" stroke="#000" stroke-width="2.5"/>
+        <ellipse cx="42" cy="54" rx="4" ry="6" fill="#9333ea" stroke="#000" stroke-width="1.5"/>
+        <ellipse cx="58" cy="54" rx="4" ry="6" fill="#9333ea" stroke="#000" stroke-width="1.5"/>
+        <!-- 深藍皮衣外套 -->
+        <path d="M 28 72 L 72 72 L 68 110 L 32 110 Z" fill="#1e1b4b" stroke="#000" stroke-width="3"/>
+        <!-- 千年積木項鍊 -->
+        <polygon points="50,78 40,95 60,95" fill="#facc15" stroke="#000" stroke-width="2"/>
+        <circle cx="50" cy="88" r="2.5" fill="#000"/>
+      </svg>
+    `,
+    // 決鬥怪獸：栗子球 (Kuriboh)
+    kuriboh: `
+      <svg viewBox="0 0 100 100" width="68" height="68">
+        <!-- 毛茸茸深棕身體 -->
+        <circle cx="50" cy="50" r="35" fill="#78350f" stroke="#000" stroke-width="3"/>
+        <ellipse cx="50" cy="20" rx="10" ry="8" fill="#78350f"/>
+        <ellipse cx="25" cy="30" rx="8" ry="10" fill="#78350f"/>
+        <ellipse cx="75" cy="30" rx="8" ry="10" fill="#78350f"/>
+        <!-- 綠色大眼萌 -->
+        <ellipse cx="38" cy="48" rx="8" ry="12" fill="#22c55e" stroke="#000" stroke-width="2"/>
+        <ellipse cx="62" cy="48" rx="8" ry="12" fill="#22c55e" stroke="#000" stroke-width="2"/>
+        <circle cx="39" cy="46" r="3" fill="#fff"/>
+        <circle cx="63" cy="46" r="3" fill="#fff"/>
+        <!-- 小爪子 -->
+        <ellipse cx="35" cy="80" rx="8" ry="5" fill="#ca8a04" stroke="#000" stroke-width="2"/>
+        <ellipse cx="65" cy="80" rx="8" ry="5" fill="#ca8a04" stroke="#000" stroke-width="2"/>
+      </svg>
+    `,
     spark: `
       <svg viewBox="0 0 100 100" width="100%" height="100%">
         <polygon points="50,0 60,35 95,50 60,65 50,100 40,65 5,50 40,35" fill="#fde047" stroke="#ffffff" stroke-width="4"/>
       </svg>
     `
   };
+
+  let currentTheme = 'mario'; // 'mario' 或 'yugi'
+
+  function toggleTheme() {
+    currentTheme = currentTheme === 'mario' ? 'yugi' : 'mario';
+    document.body.className = `theme-${currentTheme}`;
+    const btn = document.getElementById('theme-btn');
+    const title = document.getElementById('menu-title');
+    
+    if (currentTheme === 'mario') {
+      btn.textContent = '🎨 瑪利歐';
+      title.innerHTML = 'SUPER MARIO<br>MATH BATTLE';
+      playerBox.innerHTML = SVGS.mario;
+      enemyBox.innerHTML = SVGS.goomba;
+    } else {
+      btn.textContent = '🎨 遊戲王';
+      title.innerHTML = 'YU-GI-OH!<br>MATH DUEL';
+      playerBox.innerHTML = SVGS.yugi;
+      enemyBox.innerHTML = SVGS.kuriboh;
+    }
+  }
 
   /* ================= 音訊載入與音效控制 ================= */
   const bgmAudio = new Audio('bgm.mp3');
@@ -502,7 +628,7 @@
 
   function startBGM() {
     if (isBGMEnabled) {
-      bgmAudio.play().catch(e => console.log('等待互動後播放'));
+      bgmAudio.play().catch(e => console.log('等待互動'));
     }
   }
 
@@ -560,8 +686,8 @@
 
     roundCount.textContent = `${currentRound}`;
     updateLivesUI();
-    playerBox.innerHTML = SVGS.mario;
-    enemyBox.innerHTML = SVGS.goomba;
+    playerBox.innerHTML = currentTheme === 'mario' ? SVGS.mario : SVGS.yugi;
+    enemyBox.innerHTML = currentTheme === 'mario' ? SVGS.goomba : SVGS.kuriboh;
 
     modalBox.style.display = 'none';
     lbModal.style.display = 'none';
@@ -579,7 +705,6 @@
     playerBox.classList.remove('player-stomp-anim');
     playerBox.classList.add('idle-anim');
 
-    // 觸發香菇從水管由下往上升起動畫
     enemyBox.classList.remove('enemy-squished', 'idle-anim', 'enemy-emerge-anim');
     setTimeout(() => {
       enemyBox.classList.add('enemy-emerge-anim');
@@ -687,7 +812,6 @@
       playerBox.classList.remove('idle-anim');
       playerBox.classList.add('player-stomp-anim');
 
-      // 踩擊打擊反饋
       setTimeout(() => {
         sndStomp();
         sndCoin();
@@ -711,7 +835,6 @@
         setTimeout(() => fx.remove(), 650);
       }, 450);
 
-      // 跳回起點後再判定結算或下一關
       setTimeout(() => {
         playerBox.classList.remove('player-stomp-anim');
         playerBox.classList.add('idle-anim');
@@ -743,7 +866,7 @@
   }
 
   function endBattle(isWin) {
-    const name = prompt(isWin ? "🎉 恭喜通關！請輸入名字紀錄戰績：" : "冒險結束！請輸入名字：", "瑪利歐高手") || "英雄";
+    const name = prompt(isWin ? "🎉 恭喜通關！請輸入名字紀錄戰績：" : "冒險結束！請輸入名字：", "冒險高手") || "英雄";
     saveScore(name, totalCoins, currentDifficulty);
     openLeaderboard();
   }
