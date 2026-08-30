@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🍄 瑪利歐加減法大冒險 - 線上排行榜版</title>
+<title>🍄 瑪利歐加減法大冒險</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 <style>
@@ -55,7 +55,7 @@
 
 <div id="game-container">
   <div id="leaderboard-modal">
-    <div class="lb-title">🏆 TOP 10 LEADERBOARD</div>
+    <div class="lb-title">🏆 冒險排行榜</div>
     <table class="lb-table">
       <thead>
         <tr><th>#</th><th>PLAYER</th><th>COINS</th><th>ROUNDS</th></tr>
@@ -67,7 +67,61 @@
 </div>
 
 <script>
-const API_BASE = "http://localhost:8000/api";
+const LocalGameEngine = {
+  generateQuestion(difficulty) {
+    const isPlus = Math.random() > 0.45;
+    let a = 0, b = 0, maxR = 10;
+
+    if (difficulty === "10") {
+      a = isPlus ? Math.floor(Math.random() * 6) : Math.floor(Math.random() * 10) + 1;
+      b = isPlus ? Math.floor(Math.random() * (10 - a)) : Math.floor(Math.random() * (a + 1));
+      maxR = 10;
+    } else if (difficulty === "100") {
+      a = isPlus ? Math.floor(Math.random() * 50) + 10 : Math.floor(Math.random() * 60) + 20;
+      b = isPlus ? Math.floor(Math.random() * (100 - a)) : Math.floor(Math.random() * (a - 5)) + 1;
+      maxR = 100;
+    } else {
+      a = isPlus ? Math.floor(Math.random() * 450) + 50 : Math.floor(Math.random() * 500) + 200;
+      b = isPlus ? Math.floor(Math.random() * (1000 - a)) : Math.floor(Math.random() * (a - 20)) + 10;
+      maxR = 1000;
+    }
+
+    const ans = isPlus ? a + b : a - b;
+    const options = new Set([ans]);
+    while (options.size < 4) {
+      const offset = (Math.floor(Math.random() * 7) - 3) * (difficulty === "1000" ? 10 : 1);
+      const fake = ans + (offset === 0 ? 2 : offset);
+      if (fake >= 0 && fake <= maxR) options.add(fake);
+      else options.add(Math.floor(Math.random() * maxR));
+    }
+
+    return {
+      question: `${a} ${isPlus ? '+' : '-'} ${b} = ?`,
+      correct_answer: ans,
+      options: Array.from(options).sort(() => Math.random() - 0.5)
+    };
+  },
+
+  verify(userAnswer, correctAnswer, difficulty) {
+    const isCorrect = userAnswer === correctAnswer;
+    const rewards = { "10": 5, "100": 15, "1000": 50 };
+    return {
+      is_correct: isCorrect,
+      coin_earned: isCorrect ? (rewards[difficulty] || 5) : 0
+    };
+  },
+
+  saveScore(name, coins, rounds) {
+    const list = JSON.parse(localStorage.getItem('local_lb') || '[]');
+    list.push({ name, coins, rounds });
+    list.sort((a, b) => b.coins - a.coins || b.rounds - a.rounds);
+    localStorage.setItem('local_lb', JSON.stringify(list.slice(0, 10)));
+  },
+
+  getLeaderboard() {
+    return JSON.parse(localStorage.getItem('local_lb') || '[]');
+  }
+};
 
 class MathBattleScene extends Phaser.Scene {
   constructor() {
@@ -85,8 +139,8 @@ class MathBattleScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.spritesheet('mario_sheet', 'https://labs.phaser.io/assets/sprites/mario.png', { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('goomba_sheet', 'https://labs.phaser.io/assets/sprites/invader1.png', { frameWidth: 32, frameHeight: 32 });
+    this.createTextureHero();
+    this.createTextureEnemy();
     this.createTextureSpark();
   }
 
@@ -94,28 +148,30 @@ class MathBattleScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.add.rectangle(width / 2, height / 2, width, height, 0x5c94fc);
+    
+    const hills = this.add.graphics();
+    hills.fillStyle(0x00a800, 1);
+    hills.fillCircle(80, 480, 120);
+    hills.fillCircle(400, 480, 150);
+    hills.fillStyle(0x008800, 1);
+    hills.fillCircle(240, 490, 80);
+
     this.add.rectangle(width / 2, 490, width, 60, 0xc84c0c);
     this.add.rectangle(width / 2, 462, width, 4, 0x000000);
     this.add.rectangle(380, 440, 60, 50, 0x00a800).setStrokeStyle(3, 0x000000);
     this.add.rectangle(380, 410, 68, 14, 0x00a800).setStrokeStyle(3, 0x000000);
 
-    this.anims.create({
-      key: 'mario-walk',
-      frames: this.anims.generateFrameNumbers('mario_sheet', { start: 0, end: 2 }),
-      frameRate: 8,
-      repeat: -1
-    });
-    this.anims.create({ key: 'mario-jump', frames: [{ key: 'mario_sheet', frame: 4 }], frameRate: 1 });
-    this.anims.create({ key: 'mario-idle', frames: [{ key: 'mario_sheet', frame: 0 }], frameRate: 1 });
-    this.anims.create({
-      key: 'enemy-walk',
-      frames: this.anims.generateFrameNumbers('goomba_sheet', { start: 0, end: 1 }),
-      frameRate: 4,
-      repeat: -1
-    });
+    this.hero = this.add.sprite(90, 425, 'pixel_hero');
+    this.enemy = this.add.sprite(380, 425, 'pixel_enemy');
 
-    this.hero = this.add.sprite(90, 430, 'mario_sheet').setScale(3.5).play('mario-idle');
-    this.enemy = this.add.sprite(380, 430, 'goomba_sheet').setScale(2).play('enemy-walk');
+    this.tweens.add({
+      targets: [this.hero, this.enemy],
+      y: '-=5',
+      duration: 600,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
 
     this.coinText = this.add.text(20, 20, `🪙 0`, { font: '14px "Press Start 2P"', fill: '#fff' }).setStroke('#000', 4);
     this.roundText = this.add.text(180, 20, `RD 1/5`, { font: '14px "Press Start 2P"', fill: '#fff' }).setStroke('#000', 4);
@@ -146,6 +202,8 @@ class MathBattleScene extends Phaser.Scene {
       const btn = this.add.rectangle(pos.x, pos.y, 200, 64, 0xe52521).setStrokeStyle(4, 0xffffff).setInteractive({ useHandCursor: true });
       const txt = this.add.text(pos.x, pos.y, `-`, { font: '24px "Press Start 2P"', fill: '#ffffff' }).setOrigin(0.5);
       btn.on('pointerdown', () => this.handleAnswer(idx));
+      btn.on('pointerover', () => btn.setFillStyle(0xff4444));
+      btn.on('pointerout', () => btn.setFillStyle(0xe52521));
       this.optionButtons.push(btn);
       this.optionTexts.push(txt);
     });
@@ -153,83 +211,61 @@ class MathBattleScene extends Phaser.Scene {
     this.fetchNextQuestion();
   }
 
-  async fetchNextQuestion() {
-    try {
-      const res = await fetch(`${API_BASE}/question?difficulty=${this.difficulty}`);
-      this.currentData = await res.json();
-      this.qText.setText(this.currentData.question);
-      this.currentData.options.forEach((opt, i) => {
-        this.optionTexts[i].setText(opt);
-        this.optionButtons[i].setData('value', opt);
-      });
-      this.isActionLocked = false;
-    } catch (err) {
-      this.qText.setText("連線失敗");
-    }
+  fetchNextQuestion() {
+    this.currentData = LocalGameEngine.generateQuestion(this.difficulty);
+    this.qText.setText(this.currentData.question);
+    this.currentData.options.forEach((opt, i) => {
+      this.optionTexts[i].setText(opt);
+      this.optionButtons[i].setData('value', opt);
+    });
+    this.isActionLocked = false;
   }
 
-  async handleAnswer(index) {
+  handleAnswer(index) {
     if (this.isActionLocked) return;
     this.isActionLocked = true;
 
     const chosen = this.optionButtons[index].getData('value');
-    try {
-      const res = await fetch(`${API_BASE}/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_answer: chosen,
-          correct_answer: this.currentData.correct_answer,
-          difficulty: this.difficulty
-        })
-      });
-      const result = await res.json();
-      if (result.is_correct) {
-        this.playAttackSequence(result.coin_earned);
-      } else {
-        this.playHurtSequence();
-      }
-    } catch (err) {
-      this.isActionLocked = false;
+    const result = LocalGameEngine.verify(chosen, this.currentData.correct_answer, this.difficulty);
+
+    if (result.is_correct) {
+      this.playAttackSequence(result.coin_earned);
+    } else {
+      this.playHurtSequence();
     }
   }
 
   playAttackSequence(earned) {
     this.coins += earned;
     this.coinText.setText(`🪙 ${this.coins}`);
-    this.hero.play('mario-jump');
 
     this.tweens.add({
       targets: this.hero,
       x: 380,
-      y: 280,
+      y: 270,
+      angle: -10,
       duration: 320,
       ease: 'Quad.easeOut',
       onComplete: () => {
         this.tweens.add({
           targets: this.hero,
-          y: 430,
+          y: 425,
+          angle: 0,
           duration: 180,
           ease: 'Quad.easeIn',
           onComplete: () => {
             this.cameras.main.shake(200, 0.015);
             this.sparks.emitParticleAt(380, 430, 20);
-            this.enemy.stop();
+
             this.tweens.add({
               targets: this.enemy,
-              scaleY: 0.2, scaleX: 2.5, duration: 120, yoyo: true,
-              onComplete: () => this.enemy.play('enemy-walk')
+              scaleY: 0.2, scaleX: 2.2, duration: 120, yoyo: true
             });
-
-            this.hero.setFlipX(true);
-            this.hero.play('mario-walk');
 
             this.tweens.add({
               targets: this.hero,
-              x: 90, y: 430, duration: 400, delay: 150,
+              x: 90, y: 425, duration: 380, delay: 150,
               onComplete: () => {
-                this.hero.setFlipX(false);
-                this.hero.play('mario-idle');
                 this.round++;
                 if (this.round > 5) {
                   this.qText.setText("🏆 STAGE CLEAR!");
@@ -262,21 +298,49 @@ class MathBattleScene extends Phaser.Scene {
     });
   }
 
-  async submitScoreAndShowBoard() {
-    const name = prompt("請輸入你的大名紀錄成績：", this.playerName) || "MarioHero";
+  submitScoreAndShowBoard() {
+    const name = prompt("請輸入你的名字紀錄成績：", this.playerName) || "MarioHero";
     this.playerName = name;
     localStorage.setItem('player_name', name);
-
-    await fetch(`${API_BASE}/score`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        player_name: name,
-        total_coins: this.coins,
-        rounds_cleared: this.round - 1
-      })
-    });
+    LocalGameEngine.saveScore(name, this.coins, this.round - 1);
     openLeaderboard();
+  }
+
+  createTextureHero() {
+    const g = this.make.graphics({ x: 0, y: 0, add: false });
+    g.fillStyle(0xe52521, 1);
+    g.fillRect(16, 0, 32, 16);
+    g.fillRect(8, 12, 44, 8);
+    g.fillStyle(0xfed7aa, 1);
+    g.fillRect(16, 20, 28, 20);
+    g.fillRect(40, 24, 12, 12);
+    g.fillStyle(0x451a03, 1);
+    g.fillRect(28, 32, 24, 8);
+    g.fillStyle(0x0284c7, 1);
+    g.fillRect(16, 40, 32, 24);
+    g.fillStyle(0xfde047, 1);
+    g.fillRect(20, 44, 6, 6);
+    g.fillRect(38, 44, 6, 6);
+    g.fillStyle(0x78350f, 1);
+    g.fillRect(12, 64, 16, 8);
+    g.fillRect(36, 64, 16, 8);
+    g.generateTexture('pixel_hero', 64, 72);
+  }
+
+  createTextureEnemy() {
+    const g = this.make.graphics({ x: 0, y: 0, add: false });
+    g.fillStyle(0x9a3412, 1);
+    g.fillRect(16, 0, 32, 12);
+    g.fillRect(8, 12, 48, 24);
+    g.fillStyle(0xfed7aa, 1);
+    g.fillRect(16, 36, 32, 16);
+    g.fillStyle(0x000000, 1);
+    g.fillRect(20, 36, 6, 12);
+    g.fillRect(38, 36, 6, 12);
+    g.fillStyle(0x000000, 1);
+    g.fillRect(8, 52, 18, 10);
+    g.fillRect(38, 52, 18, 10);
+    g.generateTexture('pixel_enemy', 64, 64);
   }
 
   createTextureSpark() {
@@ -288,25 +352,23 @@ class MathBattleScene extends Phaser.Scene {
   }
 }
 
-async function openLeaderboard() {
+function openLeaderboard() {
   const modal = document.getElementById('leaderboard-modal');
   const tbody = document.getElementById('lb-body');
   modal.style.display = 'flex';
-  tbody.innerHTML = '<tr><td colspan="4">載入排行榜中...</td></tr>';
-
-  try {
-    const res = await fetch(`${API_BASE}/leaderboard?limit=10`);
-    const data = await res.json();
-    tbody.innerHTML = data.map(item => `
+  const data = LocalGameEngine.getLeaderboard();
+  
+  if (data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4">尚無紀錄</td></tr>';
+  } else {
+    tbody.innerHTML = data.map((item, idx) => `
       <tr>
-        <td style="color:#fde047;">${item.rank}</td>
+        <td style="color:#fde047;">${idx + 1}</td>
         <td>${item.name}</td>
         <td>🪙 ${item.coins}</td>
         <td>${item.rounds}</td>
       </tr>
     `).join('');
-  } catch(e) {
-    tbody.innerHTML = '<tr><td colspan="4">無法取得排行榜</td></tr>';
   }
 }
 
