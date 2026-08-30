@@ -436,7 +436,6 @@
     100% { transform: translate3d(0, -50px, 0) scale(1.25); opacity: 0; }
   }
 
-  /* ✏️ 手指草稿白板專屬浮層樣式 */
   #scratchpad-layer {
     position: absolute;
     top: 0;
@@ -689,8 +688,8 @@
     <div class="menu-scroll-area">
       <div class="mode-group-title">➕ ➖ 加法與減法挑戰</div>
       <button class="mode-btn" onclick="startBattle('10')">🍄 10 以內加減法 (8秒)</button>
-      <button class="mode-btn" onclick="startBattle('100')">⭐ 100 以內加減法 (25秒)</button>
-      <button class="mode-btn" onclick="startBattle('1000')">👑 1000 以內大冒險 (35秒)</button>
+      <button class="mode-btn" onclick="startBattle('100')">⭐ 100 以內加減法 (☕ 免倒數)</button>
+      <button class="mode-btn" onclick="startBattle('1000')">👑 1000 以內大冒險 (☕ 免倒數)</button>
       
       <div class="mode-group-title">✖️ 九九乘法表挑戰</div>
       <button class="mode-btn mul" onclick="startBattle('mul_2_5')">🌸 2 ~ 5 乘法表 (8秒)</button>
@@ -841,7 +840,7 @@
   function resizeScratchpad() {
     const rect = scratchpadLayer.getBoundingClientRect();
     padCanvas.width = rect.width;
-    padCanvas.height = rect.height - 45; // 扣除工具列高度
+    padCanvas.height = rect.height - 45;
   }
 
   function toggleScratchpad() {
@@ -1040,11 +1039,11 @@
     statusIndicator.innerHTML = html;
   }
 
-  /* ================= 計時器管理 ================= */
+  /* ================= 計時器管理（100與1000免倒數） ================= */
   function getBaseTimeForDifficulty(diff) {
     switch (diff) {
-      case '1000': return 35;
-      case '100': return 25;
+      case '1000': return 0;   // 0 代表無時間限制（免倒數）
+      case '100': return 0;    // 0 代表無時間限制（免倒數）
       case 'div_all': return 12;
       case 'div_basic': return 10;
       case 'mul_2_9': return 10;
@@ -1054,7 +1053,18 @@
 
   function startTimer() {
     clearInterval(timerInterval);
-    maxTime = getBaseTimeForDifficulty(currentDifficulty) + extraTimeAdded;
+    const baseTime = getBaseTimeForDifficulty(currentDifficulty);
+
+    // ☕ 100 與 1000 模式：免倒數，時間條恆滿綠色
+    if (baseTime === 0) {
+      maxTime = 1;
+      timeLeft = 1;
+      timerBar.style.width = '100%';
+      timerBar.style.backgroundColor = '#22c55e';
+      return;
+    }
+
+    maxTime = baseTime + extraTimeAdded;
     timeLeft = maxTime;
     extraTimeAdded = 0;
     updateTimerUI();
