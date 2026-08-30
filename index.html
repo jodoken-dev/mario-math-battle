@@ -51,7 +51,7 @@
 
   #header {
     background: rgba(0, 0, 0, 0.75);
-    padding: 10px 14px;
+    padding: 10px 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -173,13 +173,14 @@
     transform-origin: bottom center;
   }
 
+  /* 調整香菇從水管升起的動畫：更慢、更明顯 */
   .enemy-emerge-anim {
-    animation: pipeEmerge 0.55s cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
+    animation: pipeEmerge 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   }
   @keyframes pipeEmerge {
-    0% { transform: translateY(60px) scale(0.7); opacity: 0; }
-    60% { transform: translateY(-10px) scale(1.05); opacity: 1; }
-    100% { transform: translateY(0) scale(1); opacity: 1; }
+    0% { transform: translateY(80px); opacity: 0; }
+    30% { transform: translateY(50px); opacity: 1; }
+    100% { transform: translateY(0); opacity: 1; }
   }
 
   .player-stomp-anim {
@@ -391,7 +392,6 @@
     <button class="btn-option" onclick="handleChoice(3)" id="opt-3">-</button>
   </div>
 
-  <!-- 難度選擇選單 -->
   <div id="modal-box" class="modal-screen">
     <h1 class="modal-title">SUPER MARIO<br>MATH BATTLE</h1>
     <p class="modal-desc">請選擇訓練等級：</p>
@@ -407,7 +407,6 @@
     <button class="mode-btn mul" onclick="startBattle('mul_2_9')">🔥 2 ~ 9 乘法全階段</button>
   </div>
 
-  <!-- 排行榜視窗 -->
   <div id="lb-modal" class="modal-screen" style="display:none;">
     <h1 class="modal-title">🏆 TOP 10 冒險英雄榜</h1>
     <table class="lb-table">
@@ -459,70 +458,88 @@
     `
   };
 
-  /* ================= 8-bit 音訊與經典 BGM 合成引擎 ================= */
-  const actx = new (window.AudioContext || window.webkitAudioContext)();
+  /* ================= 8-bit 音效與經典 BGM 引擎 ================= */
+  let actx = null;
+  function getAudioContext() {
+    if (!actx) {
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (actx.state === 'suspended') actx.resume();
+    return actx;
+  }
+
+  window.addEventListener('pointerdown', () => { getAudioContext(); }, { once: false });
+  window.addEventListener('keydown', () => { getAudioContext(); }, { once: false });
+
   let isBGMEnabled = true;
-  let isBGMPaused = false;
   let bgmTimer = null;
 
   function playTone(freq, type, dur, gainVal = 0.15) {
     try {
-      if (actx.state === 'suspended') actx.resume();
-      const osc = actx.createOscillator();
-      const g = actx.createGain();
+      const ctx = getAudioContext();
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
       osc.type = type;
-      osc.frequency.setValueAtTime(freq, actx.currentTime);
-      g.gain.setValueAtTime(gainVal, actx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      
+      // 修復聲音太短的問題：讓音符有足夠的延音(Sustain)時間再淡出
+      g.gain.setValueAtTime(gainVal, ctx.currentTime);
+      g.gain.setValueAtTime(gainVal, ctx.currentTime + dur - 0.03); 
+      g.gain.linearRampToValueAtTime(0.001, ctx.currentTime + dur);
+      
       osc.connect(g);
-      g.connect(actx.destination);
+      g.connect(ctx.destination);
       osc.start();
-      osc.stop(actx.currentTime + dur);
+      osc.stop(ctx.currentTime + dur);
     } catch(e) {}
   }
 
   function sndCoin() {
-    playTone(987.77, 'square', 0.08, 0.2);
-    setTimeout(() => playTone(1318.51, 'square', 0.28, 0.2), 70);
+    playTone(987.77, 'square', 0.1, 0.2);
+    setTimeout(() => playTone(1318.51, 'square', 0.35, 0.2), 80);
   }
   function sndJump() {
-    [150, 300, 450, 600].forEach((p, idx) => setTimeout(() => playTone(p, 'square', 0.04, 0.12), idx * 25));
+    [150, 300, 450, 600].forEach((p, idx) => setTimeout(() => playTone(p, 'square', 0.05, 0.12), idx * 25));
   }
-  function sndStomp() { playTone(160, 'triangle', 0.18, 0.4); }
-  function sndWrong() { playTone(120, 'sawtooth', 0.25, 0.2); }
+  function sndStomp() { playTone(160, 'triangle', 0.2, 0.4); }
+  function sndWrong() { playTone(120, 'sawtooth', 0.3, 0.2); }
   function sndPipe() {
-    [300, 350, 400, 450].forEach((f, i) => setTimeout(() => playTone(f, 'sine', 0.06, 0.08), i * 35));
+    [300, 350, 400, 450].forEach((f, i) => setTimeout(() => playTone(f, 'sine', 0.08, 0.12), i * 35));
   }
 
-  // 經典瑪利歐主題曲樂譜 (頻率, 時長拍數)
+  // 擴充版瑪利歐主題曲樂譜
   const MARIO_THEME_NOTES = [
     [659.25, 0.15], [659.25, 0.15], [0, 0.15], [659.25, 0.15], [0, 0.15], [523.25, 0.15], [659.25, 0.15], [0, 0.15],
     [783.99, 0.3], [0, 0.3], [392.00, 0.3], [0, 0.3],
     [523.25, 0.22], [0, 0.15], [392.00, 0.22], [0, 0.15], [329.63, 0.22], [0, 0.15],
     [440.00, 0.18], [493.88, 0.18], [466.16, 0.15], [440.00, 0.22],
     [392.00, 0.15], [659.25, 0.15], [783.99, 0.15], [880.00, 0.22], [698.46, 0.15], [783.99, 0.15],
-    [0, 0.15], [659.25, 0.18], [523.25, 0.15], [587.33, 0.15], [493.88, 0.22], [0, 0.2]
+    [0, 0.15], [659.25, 0.18], [523.25, 0.15], [587.33, 0.15], [493.88, 0.22], [0, 0.2],
+    [523.25, 0.22], [0, 0.15], [392.00, 0.22], [0, 0.15], [329.63, 0.22], [0, 0.15],
+    [440.00, 0.18], [493.88, 0.18], [466.16, 0.15], [440.00, 0.22],
+    [392.00, 0.15], [659.25, 0.15], [783.99, 0.15], [880.00, 0.22], [698.46, 0.15], [783.99, 0.15],
+    [0, 0.15], [659.25, 0.18], [523.25, 0.15], [587.33, 0.15], [493.88, 0.22], [0, 0.4]
   ];
 
   let currentNoteIdx = 0;
   function playNextBGMNote() {
-    if (!isBGMEnabled || isBGMPaused) return;
+    if (!isBGMEnabled) return;
     const [freq, dur] = MARIO_THEME_NOTES[currentNoteIdx];
     if (freq > 0) {
-      playTone(freq, 'triangle', dur * 0.9, 0.045);
+      playTone(freq, 'triangle', dur * 0.9, 0.06);
     }
     currentNoteIdx = (currentNoteIdx + 1) % MARIO_THEME_NOTES.length;
-    bgmTimer = setTimeout(playNextBGMNote, dur * 1000 * 0.85);
+    bgmTimer = setTimeout(playNextBGMNote, dur * 1000);
   }
 
   function startBGM() {
     if (bgmTimer) clearTimeout(bgmTimer);
-    isBGMPaused = false;
     currentNoteIdx = 0;
     playNextBGMNote();
   }
 
   function toggleBGM() {
+    getAudioContext();
     isBGMEnabled = !isBGMEnabled;
     const btn = document.getElementById('bgm-toggle-btn');
     if (isBGMEnabled) {
@@ -560,11 +577,12 @@
   }
 
   function showDifficultyMenu() {
+    getAudioContext();
     modalBox.style.display = 'flex';
   }
 
   function startBattle(diff) {
-    if (actx.state === 'suspended') actx.resume();
+    getAudioContext();
     startBGM();
 
     currentDifficulty = diff;
@@ -595,18 +613,19 @@
     isActionLocked = false;
     roundCount.textContent = `${currentRound}`;
     
-    // 香菇怪物從水管升起動畫
-    enemyBox.classList.remove('enemy-squished', 'idle-anim');
-    void enemyBox.offsetWidth;
-    enemyBox.classList.add('enemy-emerge-anim');
-    sndPipe();
+    // 修復香菇沒升起來的問題：確保瀏覽器順利切換 Class 渲染動畫
+    enemyBox.classList.remove('enemy-squished', 'idle-anim', 'enemy-emerge-anim');
+    setTimeout(() => {
+      enemyBox.classList.add('enemy-emerge-anim');
+      sndPipe();
+    }, 20); // 給瀏覽器極短暫的間隔來重置動畫狀態
     
     setTimeout(() => {
       if (!enemyBox.classList.contains('enemy-squished')) {
         enemyBox.classList.remove('enemy-emerge-anim');
         enemyBox.classList.add('idle-anim');
       }
-    }, 560);
+    }, 850);
 
     playerBox.classList.remove('player-stomp-anim');
     playerBox.classList.add('idle-anim');
@@ -685,6 +704,7 @@
 
   function handleChoice(idx) {
     if (isActionLocked) return;
+    getAudioContext();
     const chosen = parseInt(document.getElementById(`opt-${idx}`).dataset.val, 10);
 
     if (chosen === correctAnswer) {
@@ -765,6 +785,7 @@
   }
 
   function openLeaderboard() {
+    getAudioContext();
     const list = JSON.parse(localStorage.getItem('mario_lb') || '[]');
     const tbody = document.getElementById('lb-body');
     if (list.length === 0) {
