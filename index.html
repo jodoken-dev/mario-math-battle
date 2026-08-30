@@ -50,7 +50,7 @@
   }
 
   #header {
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.75);
     padding: 10px 14px;
     display: flex;
     justify-content: space-between;
@@ -165,32 +165,49 @@
   }
 
   #player-box { left: 24px; z-index: 15; }
-  #enemy-box { right: 30px; z-index: 10; transform-origin: bottom center; }
+  
+  /* 栗寶寶怪物：位置對齊水管口 */
+  #enemy-box {
+    right: 18px;
+    bottom: 40px;
+    z-index: 7; /* 在水管後方升起 */
+    transform-origin: bottom center;
+  }
+
+  /* 香菇從水管由下往上升起動畫 */
+  .enemy-emerge-anim {
+    animation: pipeEmerge 0.55s cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
+  }
+  @keyframes pipeEmerge {
+    0% { transform: translateY(60px) scale(0.7); opacity: 0; }
+    60% { transform: translateY(-10px) scale(1.05); opacity: 1; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
 
   .player-stomp-anim {
     animation: heroJumpStomp 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important;
   }
   @keyframes heroJumpStomp {
     0% { transform: translate3d(0, 0, 0); }
-    35% { transform: translate3d(130px, -135px, 0) rotate(-10deg); }
-    65% { transform: translate3d(240px, -15px, 0) scaleY(0.85); }
-    80% { transform: translate3d(240px, -45px, 0); }
-    100% { transform: translate3d(240px, 0, 0); }
+    35% { transform: translate3d(140px, -150px, 0) rotate(-10deg); }
+    65% { transform: translate3d(250px, -50px, 0) scaleY(0.85); }
+    80% { transform: translate3d(250px, -75px, 0); }
+    100% { transform: translate3d(250px, -40px, 0); }
   }
 
   .enemy-squished {
     animation: squishAnim 0.4s ease forwards !important;
   }
   @keyframes squishAnim {
-    0% { transform: scale(1, 1); }
-    40% { transform: scale(1.4, 0.2) translateY(25px); opacity: 0.9; }
-    100% { transform: scale(1.6, 0.05) translateY(35px); opacity: 0; }
+    0% { transform: scale(1, 1) translateY(0); }
+    40% { transform: scale(1.4, 0.2) translateY(20px); opacity: 0.9; }
+    100% { transform: scale(1.6, 0.05) translateY(50px); opacity: 0; }
   }
 
   .hit-spark {
     position: absolute;
-    right: 50px;
-    bottom: 30px;
+    right: 40px;
+    bottom: 50px;
     width: 60px;
     height: 60px;
     pointer-events: none;
@@ -202,27 +219,28 @@
     100% { transform: scale(1.5) rotate(45deg); opacity: 0; }
   }
 
-  .scenery-ground { width: 100%; position: relative; z-index: 5; }
+  .scenery-ground { width: 100%; position: relative; z-index: 8; }
   .pipe {
     position: absolute;
     right: 25px;
     bottom: 0;
-    width: 50px;
-    height: 40px;
+    width: 76px;
+    height: 48px;
     background: #00a800;
     border: 4px solid #000;
-    box-shadow: inset 4px 0 0 #54f054, inset -4px 0 0 #005400;
+    box-shadow: inset 5px 0 0 #54f054, inset -5px 0 0 #005400;
+    z-index: 9;
   }
   .pipe::before {
     content: '';
     position: absolute;
-    top: -12px;
+    top: -14px;
     left: -6px;
-    width: 54px;
-    height: 12px;
+    width: 80px;
+    height: 14px;
     background: #00a800;
     border: 4px solid #000;
-    box-shadow: inset 4px 0 0 #54f054, inset -4px 0 0 #005400;
+    box-shadow: inset 5px 0 0 #54f054, inset -5px 0 0 #005400;
   }
   .ground {
     width: 100%;
@@ -234,6 +252,8 @@
       #fc9838 14px, #fc9838 24px
     );
     border-top: 4px solid #000;
+    position: relative;
+    z-index: 10;
   }
 
   #options-grid {
@@ -356,7 +376,7 @@
 
     <div class="arena">
       <div class="sprite-box idle-anim" id="player-box"></div>
-      <div class="sprite-box idle-anim" id="enemy-box"></div>
+      <div class="sprite-box" id="enemy-box"></div>
     </div>
 
     <div class="scenery-ground">
@@ -372,7 +392,7 @@
     <button class="btn-option" onclick="handleChoice(3)" id="opt-3">-</button>
   </div>
 
-  <!-- 6 種難度選擇選單 -->
+  <!-- 難度選擇選單 -->
   <div id="modal-box" class="modal-screen">
     <h1 class="modal-title">SUPER MARIO<br>MATH BATTLE</h1>
     <p class="modal-desc">請選擇訓練等級：</p>
@@ -466,6 +486,9 @@
   }
   function sndStomp() { playTone(160, 'triangle', 0.18, 0.4); }
   function sndWrong() { playTone(120, 'sawtooth', 0.25, 0.2); }
+  function sndPipe() {
+    [300, 350, 400, 450].forEach((f, i) => setTimeout(() => playTone(f, 'sine', 0.06, 0.08), i * 35));
+  }
 
   let totalCoins = parseInt(localStorage.getItem('mario_total_coins') || '0', 10);
   let currentDifficulty = '10';
@@ -522,8 +545,19 @@
     isActionLocked = false;
     roundCount.textContent = `${currentRound}`;
     
-    enemyBox.classList.remove('enemy-squished');
-    enemyBox.classList.add('idle-anim');
+    // 觸發香菇從水管由下往上升起
+    enemyBox.classList.remove('enemy-squished', 'idle-anim');
+    void enemyBox.offsetWidth;
+    enemyBox.classList.add('enemy-emerge-anim');
+    sndPipe();
+    
+    setTimeout(() => {
+      if (!enemyBox.classList.contains('enemy-squished')) {
+        enemyBox.classList.remove('enemy-emerge-anim');
+        enemyBox.classList.add('idle-anim');
+      }
+    }, 560);
+
     playerBox.classList.remove('player-stomp-anim');
     playerBox.classList.add('idle-anim');
 
@@ -553,26 +587,23 @@
       correctAnswer = isPlus ? a + b : a - b;
       qText.textContent = `${a} ${isPlus ? '+' : '-'} ${b} = ?`;
     }
-    // 九九乘法表：2 ~ 5
     else if (currentDifficulty === 'mul_2_5') {
-      a = Math.floor(Math.random() * 4) + 2; // 2 ~ 5
-      b = Math.floor(Math.random() * 9) + 1; // 1 ~ 9
+      a = Math.floor(Math.random() * 4) + 2;
+      b = Math.floor(Math.random() * 9) + 1;
       maxRange = 45;
       correctAnswer = a * b;
       qText.textContent = `${a} × ${b} = ?`;
     }
-    // 九九乘法表：5 ~ 6
     else if (currentDifficulty === 'mul_5_6') {
-      a = Math.floor(Math.random() * 2) + 5; // 5 ~ 6
-      b = Math.floor(Math.random() * 9) + 1; // 1 ~ 9
+      a = Math.floor(Math.random() * 2) + 5;
+      b = Math.floor(Math.random() * 9) + 1;
       maxRange = 54;
       correctAnswer = a * b;
       qText.textContent = `${a} × ${b} = ?`;
     }
-    // 九九乘法表：2 ~ 9
     else if (currentDifficulty === 'mul_2_9') {
-      a = Math.floor(Math.random() * 8) + 2; // 2 ~ 9
-      b = Math.floor(Math.random() * 9) + 1; // 1 ~ 9
+      a = Math.floor(Math.random() * 8) + 2;
+      b = Math.floor(Math.random() * 9) + 1;
       maxRange = 81;
       correctAnswer = a * b;
       qText.textContent = `${a} × ${b} = ?`;
@@ -634,7 +665,7 @@
         document.getElementById('battle-stage').appendChild(spark);
         setTimeout(() => spark.remove(), 350);
 
-        enemyBox.classList.remove('idle-anim');
+        enemyBox.classList.remove('idle-anim', 'enemy-emerge-anim');
         enemyBox.classList.add('enemy-squished');
 
         const fx = document.createElement('div');
@@ -705,7 +736,6 @@
     lbModal.style.display = 'none';
   }
 
-  // 鍵盤數字鍵 1, 2, 3, 4 快捷鍵支援
   window.addEventListener('keydown', (e) => {
     if (e.key === '1') handleChoice(0);
     else if (e.key === '2') handleChoice(1);
