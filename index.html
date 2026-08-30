@@ -242,6 +242,7 @@
     box-shadow: inset 6px 0 0 #64748b, inset -6px 0 0 #0f172a;
   }
 
+  /* 角色與怪物定位容器 */
   #player-box {
     position: absolute;
     left: 28px;
@@ -359,15 +360,16 @@
     100% { transform: scale(1.4) rotate(45deg); opacity: 0; }
   }
 
+  /* 溫和彩色星光粒子（居中綻放） */
   .firework-particle {
     position: absolute;
-    width: 7px;
-    height: 7px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     pointer-events: none;
     z-index: 40;
-    box-shadow: 0 0 6px currentColor;
-    animation: fireworkExplode 0.75s cubic-bezier(0.15, 0.85, 0.35, 1) forwards;
+    box-shadow: 0 0 8px currentColor;
+    animation: fireworkExplode 0.88s cubic-bezier(0.15, 0.85, 0.35, 1) forwards;
   }
   @keyframes fireworkExplode {
     0% { transform: translate(0, 0) scale(1); opacity: 1; }
@@ -686,9 +688,6 @@
   bossAudio.loop = true;
   bossAudio.volume = 0.6;
 
-  const bowserDieAudio = new Audio('bowser_die.mp3');
-  bowserDieAudio.volume = 0.8;
-
   const winAudio = new Audio('win.mp3');
   winAudio.volume = 0.85;
 
@@ -743,10 +742,6 @@
   }
   function sndPowerUp() {
     [330, 392, 659, 523, 587, 784].forEach((f, i) => setTimeout(() => playTone(f, 'sine', 0.1, 0.18), i * 50));
-  }
-  function sndFirework() {
-    playTone(480, 'triangle', 0.08, 0.3);
-    setTimeout(() => playTone(120, 'square', 0.25, 0.4), 60);
   }
   function sndGameOver() {
     gameOverAudio.currentTime = 0;
@@ -983,17 +978,17 @@
     }
   }
 
+  /* 溫和星光煙火特效（發射範圍位於畫面中央正中心） */
   function spawnFirework(x, y) {
-    sndFirework();
     const stage = document.getElementById('battle-stage');
     const colors = ['#ef4444', '#f59e0b', '#38bdf8', '#4ade80', '#ec4899', '#fde047', '#a855f7'];
-    const count = 18;
+    const count = 22;
 
     for (let i = 0; i < count; i++) {
       const p = document.createElement('div');
       p.className = 'firework-particle';
       const angle = (Math.PI * 2 / count) * i + (Math.random() * 0.2);
-      const distance = 45 + Math.random() * 45;
+      const distance = 55 + Math.random() * 55;
       const dx = Math.cos(angle) * distance;
       const dy = Math.sin(angle) * distance;
       const color = colors[Math.floor(Math.random() * colors.length)];
@@ -1006,23 +1001,28 @@
       p.style.setProperty('--dy', `${dy}px`);
 
       stage.appendChild(p);
-      setTimeout(() => p.remove(), 750);
+      setTimeout(() => p.remove(), 880);
     }
   }
 
+  /* 🎆 精確定位在畫面正中央區域（紅圈範圍內） */
   function launchVictoryFireworks() {
-    const coords = [
-      { x: 120, y: 130, delay: 100 },
-      { x: 320, y: 110, delay: 350 },
-      { x: 220, y: 80, delay: 650 },
-      { x: 100, y: 90, delay: 950 },
-      { x: 340, y: 140, delay: 1250 },
-      { x: 230, y: 120, delay: 1550 }
+    const stage = document.getElementById('battle-stage');
+    const cx = stage.clientWidth / 2;
+    const cy = stage.clientHeight / 2 - 20;
+
+    const offsets = [
+      { dx: 0, dy: 0, delay: 100 },
+      { dx: -65, dy: -35, delay: 380 },
+      { dx: 70, dy: -25, delay: 680 },
+      { dx: -45, dy: 35, delay: 980 },
+      { dx: 55, dy: 40, delay: 1280 },
+      { dx: 0, dy: -10, delay: 1580 }
     ];
 
-    coords.forEach(item => {
+    offsets.forEach(item => {
       setTimeout(() => {
-        spawnFirework(item.x, item.y);
+        spawnFirework(cx + item.dx, cy + item.dy);
       }, item.delay);
     });
   }
@@ -1075,11 +1075,6 @@
           if (bossHp <= 0) {
             enemyBox.classList.remove('idle-anim', 'enemy-emerge-anim');
             enemyBox.classList.add('enemy-squished');
-            
-            // 💥 播放庫巴被擊敗落水音效 (Bowser Die)
-            bossAudio.pause();
-            bowserDieAudio.currentTime = 0;
-            bowserDieAudio.play().catch(e => console.log('庫巴落水音效播放'));
           }
         } else {
           enemyBox.classList.remove('idle-anim', 'enemy-emerge-anim');
@@ -1249,7 +1244,7 @@
     alert("🎉 購買成功！道具已生效！");
   }
 
-  /* ================= 結束結算、通關音樂、放煙火與回到主畫面 ================= */
+  /* ================= 結束結算、通關音樂、星光煙火與回到主畫面 ================= */
   function endBattle(isWin) {
     clearInterval(timerInterval);
     isActionLocked = true;
@@ -1262,18 +1257,16 @@
     }
 
     if (isWin) {
-      // 停止背景音樂並播放 Flagpole 勝利通關音效
       bossAudio.pause();
       bgmAudio.pause();
       winAudio.currentTime = 0;
       winAudio.play().catch(e => console.log('通關音效待互動'));
 
-      // 觸發連環煙火特效
+      // 觸發正中央星光煙火特效
       launchVictoryFireworks();
     }
 
-    // 獲勝停留 4 秒讓通關音樂與煙火播完，失敗停留 2 秒
-    const delayTime = isWin ? 4000 : 2000;
+    const delayTime = isWin ? 3800 : 2000;
 
     setTimeout(() => {
       bgmAudio.pause();
