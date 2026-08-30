@@ -185,6 +185,7 @@
     border: 1.5px solid #ffd700;
   }
 
+  /* 怪物愛心血量顯示（幽靈與庫巴通用） */
   #boss-hp-wrap {
     position: absolute;
     top: 115px;
@@ -542,7 +543,6 @@
   .lb-table th { color: #38bdf8; padding: 6px 4px; border-bottom: 2px solid #334155; }
   .lb-table td { padding: 6px 4px; text-align: center; border-bottom: 1px solid #1e293b; }
 
-  /* 📝 錯題回顧本專屬卡片樣式 */
   .review-scroll-list {
     width: 100%;
     max-height: 380px;
@@ -600,7 +600,7 @@
     <div id="status-indicator"></div>
 
     <div id="boss-hp-wrap">
-      <span class="boss-label">🔥 庫巴魔王 HP</span>
+      <span class="boss-label" id="boss-label-text">🔥 庫巴魔王 HP</span>
       <span class="boss-hearts" id="boss-hearts">❤️❤️❤️❤️❤️</span>
     </div>
 
@@ -722,6 +722,8 @@
     
     goomba: `<img src="goomba.png" alt="Goomba">`,
     piranha: `<img src="piranha.png" alt="Piranha">`,
+    bobomb: `<img src="bobomb.png" alt="Bob-omb">`,
+    boo: `<img src="boo.png" alt="Boo">`,
     bowser: `<img src="bowser.png" alt="Bowser">`,
     spark: `<svg viewBox="0 0 100 100" width="100%" height="100%"><polygon points="50,0 60,35 95,50 60,65 50,100 40,65 5,50 40,35" fill="#fde047" stroke="#ffffff" stroke-width="4"/></svg>`
   };
@@ -749,14 +751,17 @@
   let currentRound = 1;
   const TOTAL_ROUNDS = 10;
   let lives = 3;
-  let bossHp = 5;
-  const BOSS_MAX_HP = 5;
+
+  /* 👾 怪物型態與血量管理 */
+  let currentEnemyType = 'goomba'; // goomba, piranha, bobomb, boo, bowser
+  let currentEnemyHp = 1;
+  let currentEnemyMaxHp = 1;
+
   let correctAnswer = 0;
-  let currentQuestionFormula = ""; // 當前題目文字
+  let currentQuestionFormula = "";
   let isActionLocked = false;
   let comboCount = 0;
 
-  // 📝 當局錯題暫存陣列
   let sessionWrongQuestions = [];
 
   let timeLeft = 8;
@@ -882,6 +887,7 @@
   const timerBar = document.getElementById('timer-bar');
   const statusIndicator = document.getElementById('status-indicator');
   const bossHpWrap = document.getElementById('boss-hp-wrap');
+  const bossLabelText = document.getElementById('boss-label-text');
   const bossHearts = document.getElementById('boss-hearts');
 
   function renderHero() {
@@ -894,6 +900,7 @@
     if (starTurnsLeft > 0) html += `<span class="status-badge" style="color:#fde047;">⭐ 3倍 x${starTurnsLeft}</span>`;
     if (hintCount > 0) html += `<span class="status-badge" style="color:#38bdf8;">💡 提示 x${hintCount}</span>`;
     if (comboCount > 1) html += `<span class="status-badge" style="color:#f43f5e;">⚡ Combo x${comboCount}</span>`;
+    if (currentEnemyType === 'bobomb') html += `<span class="status-badge" style="color:#ef4444; border-color:#ef4444;">⚠️ 炸彈兵: 扣2心!</span>`;
     statusIndicator.innerHTML = html;
   }
 
@@ -953,9 +960,8 @@
     currentDifficulty = diff;
     currentRound = 1;
     lives = 3;
-    bossHp = BOSS_MAX_HP;
     comboCount = 0;
-    sessionWrongQuestions = []; // 新局重置錯題記錄
+    sessionWrongQuestions = [];
     isActionLocked = false;
 
     roundCount.textContent = `${currentRound}`;
@@ -968,6 +974,8 @@
     shopModal.style.display = 'none';
     reviewModal.style.display = 'none';
     lbModal.style.display = 'none';
+    
+    setupNewEnemy();
     nextTurn();
   }
 
@@ -975,16 +983,44 @@
     livesDisplay.textContent = '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, 3 - lives));
   }
 
-  function updateEnemyVisual() {
+  /* 👾 隨機怪物決定機制 */
+  function setupNewEnemy() {
     if (currentRound === TOTAL_ROUNDS) {
+      currentEnemyType = 'bowser';
+      currentEnemyMaxHp = 5;
+      currentEnemyHp = 5;
+    } else {
+      // 隨機在 栗寶寶、食人花、炸彈兵、害羞幽靈 中抽籤
+      const pool = ['goomba', 'piranha', 'bobomb', 'boo'];
+      currentEnemyType = pool[Math.floor(Math.random() * pool.length)];
+
+      if (currentEnemyType === 'boo') {
+        currentEnemyMaxHp = 3;
+        currentEnemyHp = 3;
+      } else {
+        currentEnemyMaxHp = 1;
+        currentEnemyHp = 1;
+      }
+    }
+    updateEnemyVisual();
+  }
+
+  function updateEnemyVisual() {
+    enemyBox.innerHTML = SPRITES[currentEnemyType] || SPRITES.goomba;
+
+    if (currentEnemyType === 'bowser') {
       appEl.classList.add('boss-theme');
-      enemyBox.innerHTML = SPRITES.bowser;
       bossHpWrap.style.display = 'flex';
-      bossHearts.textContent = '❤️'.repeat(Math.max(0, bossHp)) + '🖤'.repeat(Math.max(0, BOSS_MAX_HP - bossHp));
+      bossLabelText.textContent = '🔥 庫巴魔王 HP';
+      bossHearts.textContent = '❤️'.repeat(Math.max(0, currentEnemyHp)) + '🖤'.repeat(Math.max(0, currentEnemyMaxHp - currentEnemyHp));
+    } else if (currentEnemyType === 'boo') {
+      appEl.classList.remove('boss-theme');
+      bossHpWrap.style.display = 'flex';
+      bossLabelText.textContent = '👻 害羞幽靈 HP';
+      bossHearts.textContent = '❤️'.repeat(Math.max(0, currentEnemyHp)) + '🖤'.repeat(Math.max(0, currentEnemyMaxHp - currentEnemyHp));
     } else {
       appEl.classList.remove('boss-theme');
       bossHpWrap.style.display = 'none';
-      enemyBox.innerHTML = currentRound <= 4 ? SPRITES.goomba : SPRITES.piranha;
     }
   }
 
@@ -1221,14 +1257,13 @@
         document.getElementById('battle-stage').appendChild(spark);
         setTimeout(() => spark.remove(), 320);
 
-        if (currentRound === TOTAL_ROUNDS) {
-          bossHp--;
-          bossHearts.textContent = '❤️'.repeat(Math.max(0, bossHp)) + '🖤'.repeat(Math.max(0, BOSS_MAX_HP - bossHp));
-          if (bossHp <= 0) {
-            enemyBox.classList.remove('idle-anim', 'enemy-emerge-anim');
-            enemyBox.classList.add('enemy-squished');
-          }
-        } else {
+        // 扣減當前怪物血量
+        currentEnemyHp--;
+        if (currentEnemyType === 'bowser' || currentEnemyType === 'boo') {
+          bossHearts.textContent = '❤️'.repeat(Math.max(0, currentEnemyHp)) + '🖤'.repeat(Math.max(0, currentEnemyMaxHp - currentEnemyHp));
+        }
+
+        if (currentEnemyHp <= 0) {
           enemyBox.classList.remove('idle-anim', 'enemy-emerge-anim');
           enemyBox.classList.add('enemy-squished');
         }
@@ -1246,13 +1281,18 @@
         playerBox.classList.remove('player-stomp-anim');
         playerBox.classList.add('idle-anim');
 
-        if (currentRound === TOTAL_ROUNDS && bossHp > 0) {
+        // 怪物如果還有血（幽靈/庫巴），繼續留在本輪答下一題
+        if (currentEnemyHp > 0) {
           nextTurn();
-        } else if (currentRound >= TOTAL_ROUNDS && bossHp <= 0) {
-          endBattle(true);
         } else {
-          currentRound++;
-          nextTurn();
+          // 怪物死亡，判定是否為最終 Boss
+          if (currentRound >= TOTAL_ROUNDS) {
+            endBattle(true);
+          } else {
+            currentRound++;
+            setupNewEnemy(); // 換下一隻隨機怪物
+            nextTurn();
+          }
         }
       }, 920);
 
@@ -1284,6 +1324,9 @@
         document.getElementById('battle-stage').appendChild(hitSpark);
         setTimeout(() => hitSpark.remove(), 320);
 
+        // 💣 炸彈兵扣 2 顆心，其餘怪物扣 1 顆心
+        const damage = (currentEnemyType === 'bobomb') ? 2 : 1;
+
         if (shieldCount > 0) {
           shieldCount--;
           localStorage.setItem('mario_shield_count', shieldCount);
@@ -1291,12 +1334,12 @@
           sndPowerUp();
           playerBox.classList.remove('idle-anim');
           playerBox.classList.add('player-hurt-anim');
-          qText.textContent = `🛡️ 護盾抵擋！(剩餘 ${shieldCount} 層)`;
+          qText.textContent = `🛡️ 護盾抵擋傷害！(剩餘 ${shieldCount} 層)`;
           setTimeout(nextTurn, 1000);
           return;
         }
 
-        lives--;
+        lives -= damage;
         updateLivesUI();
 
         if (lives <= 0) {
@@ -1488,7 +1531,6 @@
       winAudio.pause();
       appEl.classList.remove('boss-theme');
 
-      // 若當局有錯題，自動彈出「錯題回顧本」供小朋友訂正學習
       if (sessionWrongQuestions.length > 0) {
         openReviewModal();
       } else {
@@ -1546,7 +1588,7 @@
 
   updateCoinUI();
   renderHero();
-  enemyBox.innerHTML = SPRITES.goomba;
+  setupNewEnemy();
 </script>
 </body>
 </html>
