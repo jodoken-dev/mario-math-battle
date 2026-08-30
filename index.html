@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🍄 瑪利歐加減法大冒險 - 線上排行榜版</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  body {
+    background: #0f172a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Press Start 2P', monospace;
+  }
+  #game-container {
+    width: 480px;
+    height: 720px;
+    border: 4px solid #000;
+    box-shadow: 0 10px 0 #000;
+    position: relative;
+  }
+  #leaderboard-modal {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.95);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 50;
+    color: #fff;
+  }
+  .lb-title { font-size: 18px; color: #fde047; margin-bottom: 16px; text-shadow: 2px 2px #c2410c; }
+  .lb-table { width: 100%; font-size: 11px; margin-bottom: 20px; border-collapse: collapse; }
+  .lb-table th { color: #38bdf8; padding: 8px 4px; border-bottom: 2px solid #334155; }
+  .lb-table td { padding: 8px 4px; text-align: center; border-bottom: 1px solid #1e293b; }
+  .lb-btn {
+    background: #e52521;
+    border: 2px solid #fff;
+    color: #fff;
+    font-family: inherit;
+    font-size: 12px;
+    padding: 10px 16px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <div id="leaderboard-modal">
+    <div class="lb-title">🏆 TOP 10 LEADERBOARD</div>
+    <table class="lb-table">
+      <thead>
+        <tr><th>#</th><th>PLAYER</th><th>COINS</th><th>ROUNDS</th></tr>
+      </thead>
+      <tbody id="lb-body"></tbody>
+    </table>
+    <button class="lb-btn" onclick="closeLeaderboard()">關閉</button>
+  </div>
+</div>
+
+<script>
+const API_BASE = "http://localhost:8000/api";
+
+class MathBattleScene extends Phaser.Scene {
+  constructor() {
+    super('MathBattleScene');
+  }
+
+  init() {
+    this.coins = 0;
+    this.round = 1;
+    this.lives = 3;
+    this.difficulty = '10';
+    this.currentData = null;
+    this.isActionLocked = false;
+    this.playerName = localStorage.getItem('player_name') || 'MarioHero';
+  }
+
+  preload() {
+    this.load.spritesheet('mario_sheet', 'https://labs.phaser.io/assets/sprites/mario.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('goomba_sheet', 'https://labs.phaser.io/assets/sprites/invader1.png', { frameWidth: 32, frameHeight: 32 });
+    this.createTextureSpark();
+  }
+
+  create() {
+    const { width, height } = this.scale;
+
+    this.add.rectangle(width / 2, height / 2, width, height, 0x5c94fc);
+    this.add.rectangle(width / 2, 490, width, 60, 0xc84c0c);
+    this.add.rectangle(width / 2, 462, width, 4, 0x000000);
+    this.add.rectangle(380, 440, 60, 50, 0x00a800).setStrokeStyle(3, 0x000000);
+    this.add.rectangle(380, 410, 68, 14, 0x00a800).setStrokeStyle(3, 0x000000);
+
+    this.anims.create({
+      key: 'mario-walk',
+      frames: this.anims.generateFrameNumbers('mario_sheet', { start: 0, end: 2 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({ key: 'mario-jump', frames: [{ key: 'mario_sheet', frame: 4 }], frameRate: 1 });
+    this.anims.create({ key: 'mario-idle', frames: [{ key: 'mario_sheet', frame: 0 }], frameRate: 1 });
+    this.anims.create({
+      key: 'enemy-walk',
+      frames: this.anims.generateFrameNumbers('goomba_sheet', { start: 0, end: 1 }),
+      frameRate: 4,
+      repeat: -1
+    });
+
+    this.hero = this.add.sprite(90, 430, 'mario_sheet').setScale(3.5).play('mario-idle');
+    this.enemy = this.add.sprite(380, 430, 'goomba_sheet').setScale(2).play('enemy-walk');
+
+    this.coinText = this.add.text(20, 20, `🪙 0`, { font: '14px "Press Start 2P"', fill: '#fff' }).setStroke('#000', 4);
+    this.roundText = this.add.text(180, 20, `RD 1/5`, { font: '14px "Press Start 2P"', fill: '#fff' }).setStroke('#000', 4);
+    this.livesText = this.add.text(320, 20, `❤️❤️❤️`, { font: '14px sans-serif' });
+
+    const rankBtn = this.add.rectangle(420, 60, 90, 30, 0xf59e0b).setStrokeStyle(2, 0xffffff).setInteractive({ useHandCursor: true });
+    this.add.text(420, 60, `🏆 榜`, { font: '11px sans-serif', fill: '#000' }).setOrigin(0.5);
+    rankBtn.on('pointerdown', () => openLeaderboard());
+
+    this.qBox = this.add.rectangle(width / 2, 110, 400, 60, 0xfcb040).setStrokeStyle(4, 0x000000);
+    this.qText = this.add.text(width / 2, 110, `載入中...`, { font: '20px "Press Start 2P"', fill: '#000' }).setOrigin(0.5);
+
+    this.sparks = this.add.particles(0, 0, 'spark', {
+      speed: { min: 100, max: 250 },
+      scale: { start: 1.5, end: 0 },
+      lifespan: 350,
+      emitting: false
+    });
+
+    this.optionButtons = [];
+    this.optionTexts = [];
+    const btnPositions = [
+      { x: 130, y: 560 }, { x: 350, y: 560 },
+      { x: 130, y: 640 }, { x: 350, y: 640 }
+    ];
+
+    btnPositions.forEach((pos, idx) => {
+      const btn = this.add.rectangle(pos.x, pos.y, 200, 64, 0xe52521).setStrokeStyle(4, 0xffffff).setInteractive({ useHandCursor: true });
+      const txt = this.add.text(pos.x, pos.y, `-`, { font: '24px "Press Start 2P"', fill: '#ffffff' }).setOrigin(0.5);
+      btn.on('pointerdown', () => this.handleAnswer(idx));
+      this.optionButtons.push(btn);
+      this.optionTexts.push(txt);
+    });
+
+    this.fetchNextQuestion();
+  }
+
+  async fetchNextQuestion() {
+    try {
+      const res = await fetch(`${API_BASE}/question?difficulty=${this.difficulty}`);
+      this.currentData = await res.json();
+      this.qText.setText(this.currentData.question);
+      this.currentData.options.forEach((opt, i) => {
+        this.optionTexts[i].setText(opt);
+        this.optionButtons[i].setData('value', opt);
+      });
+      this.isActionLocked = false;
+    } catch (err) {
+      this.qText.setText("連線失敗");
+    }
+  }
+
+  async handleAnswer(index) {
+    if (this.isActionLocked) return;
+    this.isActionLocked = true;
+
+    const chosen = this.optionButtons[index].getData('value');
+    try {
+      const res = await fetch(`${API_BASE}/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_answer: chosen,
+          correct_answer: this.currentData.correct_answer,
+          difficulty: this.difficulty
+        })
+      });
+      const result = await res.json();
+      if (result.is_correct) {
+        this.playAttackSequence(result.coin_earned);
+      } else {
+        this.playHurtSequence();
+      }
+    } catch (err) {
+      this.isActionLocked = false;
+    }
+  }
+
+  playAttackSequence(earned) {
+    this.coins += earned;
+    this.coinText.setText(`🪙 ${this.coins}`);
+    this.hero.play('mario-jump');
+
+    this.tweens.add({
+      targets: this.hero,
+      x: 380,
+      y: 280,
+      duration: 320,
+      ease: 'Quad.easeOut',
+      onComplete: () => {
+        this.tweens.add({
+          targets: this.hero,
+          y: 430,
+          duration: 180,
+          ease: 'Quad.easeIn',
+          onComplete: () => {
+            this.cameras.main.shake(200, 0.015);
+            this.sparks.emitParticleAt(380, 430, 20);
+            this.enemy.stop();
+            this.tweens.add({
+              targets: this.enemy,
+              scaleY: 0.2, scaleX: 2.5, duration: 120, yoyo: true,
+              onComplete: () => this.enemy.play('enemy-walk')
+            });
+
+            this.hero.setFlipX(true);
+            this.hero.play('mario-walk');
+
+            this.tweens.add({
+              targets: this.hero,
+              x: 90, y: 430, duration: 400, delay: 150,
+              onComplete: () => {
+                this.hero.setFlipX(false);
+                this.hero.play('mario-idle');
+                this.round++;
+                if (this.round > 5) {
+                  this.qText.setText("🏆 STAGE CLEAR!");
+                  this.submitScoreAndShowBoard();
+                } else {
+                  this.roundText.setText(`RD ${this.round}/5`);
+                  this.fetchNextQuestion();
+                }
+              }
+            });
+          }
+        });
+      }
+    });
+  }
+
+  playHurtSequence() {
+    this.lives--;
+    this.livesText.setText('❤️'.repeat(Math.max(0, this.lives)) + '🖤'.repeat(Math.max(0, 3 - this.lives)));
+    this.cameras.main.shake(250, 0.02);
+    this.hero.setTint(0xff0000);
+    this.time.delayedCall(300, () => {
+      this.hero.clearTint();
+      if (this.lives <= 0) {
+        this.qText.setText("💀 GAME OVER");
+        this.submitScoreAndShowBoard();
+      } else {
+        this.isActionLocked = false;
+      }
+    });
+  }
+
+  async submitScoreAndShowBoard() {
+    const name = prompt("請輸入你的大名紀錄成績：", this.playerName) || "MarioHero";
+    this.playerName = name;
+    localStorage.setItem('player_name', name);
+
+    await fetch(`${API_BASE}/score`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        player_name: name,
+        total_coins: this.coins,
+        rounds_cleared: this.round - 1
+      })
+    });
+    openLeaderboard();
+  }
+
+  createTextureSpark() {
+    const g = this.make.graphics({ x: 0, y: 0, add: false });
+    g.fillStyle(0xfde047, 1);
+    g.fillRect(3, 0, 4, 10);
+    g.fillRect(0, 3, 10, 4);
+    g.generateTexture('spark', 10, 10);
+  }
+}
+
+async function openLeaderboard() {
+  const modal = document.getElementById('leaderboard-modal');
+  const tbody = document.getElementById('lb-body');
+  modal.style.display = 'flex';
+  tbody.innerHTML = '<tr><td colspan="4">載入排行榜中...</td></tr>';
+
+  try {
+    const res = await fetch(`${API_BASE}/leaderboard?limit=10`);
+    const data = await res.json();
+    tbody.innerHTML = data.map(item => `
+      <tr>
+        <td style="color:#fde047;">${item.rank}</td>
+        <td>${item.name}</td>
+        <td>🪙 ${item.coins}</td>
+        <td>${item.rounds}</td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="4">無法取得排行榜</td></tr>';
+  }
+}
+
+function closeLeaderboard() {
+  document.getElementById('leaderboard-modal').style.display = 'none';
+}
+
+const config = {
+  type: Phaser.AUTO,
+  parent: 'game-container',
+  width: 480,
+  height: 720,
+  pixelArt: true,
+  scene: [MathBattleScene]
+};
+new Phaser.Game(config);
+</script>
+</body>
+</html>
