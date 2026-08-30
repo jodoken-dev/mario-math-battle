@@ -242,7 +242,7 @@
     box-shadow: inset 6px 0 0 #64748b, inset -6px 0 0 #0f172a;
   }
 
-  /* 角色圖片容器與真實圖像樣式 */
+  /* 角色圖片容器 */
   #player-box {
     position: absolute;
     left: 28px;
@@ -265,10 +265,10 @@
 
   #enemy-box {
     position: absolute;
-    right: 32px;
+    right: 30px;
     bottom: 96px;
-    width: 78px;
-    height: 78px;
+    width: 82px;
+    height: 82px;
     z-index: 8;
     transform-origin: bottom center;
     display: flex;
@@ -438,6 +438,13 @@
     box-shadow: inset -2px -2px 0 #047857, inset 2px 2px 0 #34d399, 0 3px 0 #000;
   }
 
+  .shop-scroll-list {
+    width: 100%;
+    max-height: 360px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
   .shop-item-row {
     width: 100%;
     display: flex;
@@ -522,6 +529,7 @@
     <button class="btn-option" onclick="handleChoice(3)" id="opt-3">-</button>
   </div>
 
+  <!-- 主畫面難度選單 -->
   <div id="modal-box" class="modal-screen">
     <h1 class="modal-title">🍄 瑪利歐數學大冒險</h1>
     <p class="modal-desc">請小朋友選擇關卡難度：</p>
@@ -537,30 +545,53 @@
     <button class="mode-btn mul" onclick="startBattle('mul_2_9')">🔥 2 ~ 9 乘法全挑戰</button>
   </div>
 
+  <!-- 道具與角色商城 -->
   <div id="shop-modal" class="modal-screen" style="display:none;">
     <h1 class="modal-title">🏪 奇諾比奧道具屋</h1>
     <p class="modal-desc">持有金幣：🪙 <span id="shop-coin-display">0</span></p>
     
-    <div class="shop-item-row">
-      <div class="shop-item-info">🍄 超級蘑菇 (30 幣)<small>免死金牌：抵擋 1 次答錯扣血</small></div>
-      <button class="shop-buy-btn" onclick="buyItem('shield', 30)">購買</button>
-    </div>
-    <div class="shop-item-row">
-      <div class="shop-item-info">⭐ 無敵星星 (50 幣)<small>下一題獲得 3 倍金幣獎勵</small></div>
-      <button class="shop-buy-btn" onclick="buyItem('star', 50)">購買</button>
-    </div>
-    <div class="shop-item-row">
-      <div class="shop-item-info">⏰ 停頓時鐘 (20 幣)<small>額外增加 5 秒作答時間</small></div>
-      <button class="shop-buy-btn" onclick="buyItem('clock', 20)">購買</button>
-    </div>
-    <div class="shop-item-row">
-      <div class="shop-item-info">🎽 路易吉造型 (100 幣)<small>解鎖 路易吉 專屬角色外觀</small></div>
-      <button class="shop-buy-btn" id="btn-skin-unlock" onclick="buySkin(100)">解鎖造型</button>
+    <div class="shop-scroll-list">
+      <!-- 戰鬥道具 -->
+      <div class="shop-item-row">
+        <div class="shop-item-info">🍄 超級蘑菇 (30 幣)<small>免死金牌：抵擋 1 次答錯扣血</small></div>
+        <button class="shop-buy-btn" onclick="buyItem('shield', 30)">購買</button>
+      </div>
+      <div class="shop-item-row">
+        <div class="shop-item-info">⭐ 無敵星星 (50 幣)<small>下一題獲得 3 倍金幣獎勵</small></div>
+        <button class="shop-buy-btn" onclick="buyItem('star', 50)">購買</button>
+      </div>
+      <div class="shop-item-row">
+        <div class="shop-item-info">⏰ 停頓時鐘 (20 幣)<small>額外增加 5 秒作答時間</small></div>
+        <button class="shop-buy-btn" onclick="buyItem('clock', 20)">購買</button>
+      </div>
+
+      <!-- 角色造型解鎖 -->
+      <div class="shop-item-row">
+        <div class="shop-item-info">🎽 瑪利歐 (預設)<small>經典冒險主角</small></div>
+        <button class="shop-buy-btn" id="btn-skin-mario" onclick="selectSkin('mario')">使用中</button>
+      </div>
+      <div class="shop-item-row">
+        <div class="shop-item-info">🎽 路易吉 (60 幣)<small>綠帽子好夥伴</small></div>
+        <button class="shop-buy-btn" id="btn-skin-luigi" onclick="buySkin('luigi', 60)">解鎖 (60)</button>
+      </div>
+      <div class="shop-item-row">
+        <div class="shop-item-info">👗 碧姬公主 (80 幣)<small>蘑菇王國的公主</small></div>
+        <button class="shop-buy-btn" id="btn-skin-peach" onclick="buySkin('peach', 80)">解鎖 (80)</button>
+      </div>
+      <div class="shop-item-row">
+        <div class="shop-item-info">🦖 耀西 (100 幣)<small>活潑可愛的綠色恐龍</small></div>
+        <button class="shop-buy-btn" id="btn-skin-yoshi" onclick="buySkin('yoshi', 100)">解鎖 (100)</button>
+      </div>
+      <div class="shop-item-row">
+        <div class="shop-item-info">🐶 大耳狗喜拿 (150 幣)<small>超人氣隱藏特別嘉賓</small></div>
+        <button class="shop-buy-btn" id="btn-skin-cinnamon" onclick="buySkin('cinnamon', 150)">解鎖 (150)</button>
+      </div>
     </div>
 
     <button class="mode-btn" style="background:#dc2626; margin-top:8px;" onclick="closeShop()">離開商店</button>
   </div>
 
+  <!-- 排行榜視窗 -->
   <div id="lb-modal" class="modal-screen" style="display:none;">
     <h1 class="modal-title">🏆 TOP 10 冒險英雄榜</h1>
     <table class="lb-table">
@@ -572,32 +603,24 @@
 </div>
 
 <script>
-  /* 官方高畫質透明立繪圖庫 */
-  const IMAGES = {
-    mario: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png', // 備用皮卡丘/或瑪利歐官方圖
-    mario_hero: 'https://assets.stickpng.com/images/580b57fcd9996e24bc43c316.png',
-    luigi_hero: 'https://assets.stickpng.com/images/580b57fcd9996e24bc43c315.png',
-    goomba: 'https://assets.stickpng.com/images/580b57fcd9996e24bc43c318.png',
-    koopa: 'https://assets.stickpng.com/images/580b57fcd9996e24bc43c319.png',
-    piranha: 'https://assets.stickpng.com/images/580b57fcd9996e24bc43c31a.png',
-    bowser: 'https://assets.stickpng.com/images/580b57fcd9996e24bc43c317.png'
-  };
-
-  /* 穩定的官方高畫質去背圖庫（附可靠 CDN 備援） */
+  /* 支援本機上傳圖片 */
   const SPRITES = {
-    mario: `<img src="https://images.wikidexcdn.net/widgets/es/images/thumb/7/77/latest/20231006155541/Mario_Super_Mario_Bros._Wonder.png/250px-Mario_Super_Mario_Bros._Wonder.png" alt="Mario" onerror="this.src='https://assets.stickpng.com/images/580b57fcd9996e24bc43c316.png'">`,
-    luigi: `<img src="https://images.wikidexcdn.net/widgets/es/images/thumb/c/c5/latest/20231006155609/Luigi_Super_Mario_Bros._Wonder.png/250px-Luigi_Super_Mario_Bros._Wonder.png" alt="Luigi">`,
-    goomba: `<img src="https://images.wikidexcdn.net/widgets/es/images/thumb/8/87/latest/20231006155648/Goomba_Super_Mario_Bros._Wonder.png/200px-Goomba_Super_Mario_Bros._Wonder.png" alt="Goomba">`,
-    koopa: `<img src="https://images.wikidexcdn.net/widgets/es/images/thumb/2/25/latest/20231006155702/Koopa_Troopa_Super_Mario_Bros._Wonder.png/200px-Koopa_Troopa_Super_Mario_Bros._Wonder.png" alt="Koopa">`,
-    piranha: `<img src="https://images.wikidexcdn.net/widgets/es/images/thumb/4/4e/latest/20231006155715/Piranha_Plant_Super_Mario_Bros._Wonder.png/200px-Piranha_Plant_Super_Mario_Bros._Wonder.png" alt="Piranha">`,
-    bowser: `<img src="https://images.wikidexcdn.net/widgets/es/images/thumb/9/92/latest/20231006155728/Bowser_Super_Mario_Bros._Wonder.png/250px-Bowser_Super_Mario_Bros._Wonder.png" alt="Bowser">`,
+    mario: `<img src="mario.png" alt="Mario">`,
+    luigi: `<img src="luigi.png" alt="Luigi">`,
+    peach: `<img src="peach.png" alt="Peach">`,
+    yoshi: `<img src="yoshi.png" alt="Yoshi">`,
+    cinnamon: `<img src="cinnamon.png" alt="Cinnamon">`,
+    
+    goomba: `<img src="goomba.png" alt="Goomba">`,
+    piranha: `<img src="piranha.png" alt="Piranha">`,
+    bowser: `<img src="bowser.png" alt="Bowser">`,
     spark: `<svg viewBox="0 0 100 100" width="100%" height="100%"><polygon points="50,0 60,35 95,50 60,65 50,100 40,65 5,50 40,35" fill="#fde047" stroke="#ffffff" stroke-width="4"/></svg>`
   };
 
   /* ================= 狀態管理與系統變數 ================= */
   let totalCoins = parseInt(localStorage.getItem('mario_total_coins') || '0', 10);
-  let unlockedSkins = JSON.parse(localStorage.getItem('mario_unlocked_skins') || '["default"]');
-  let currentSkin = localStorage.getItem('mario_current_skin') || 'default';
+  let unlockedSkins = JSON.parse(localStorage.getItem('mario_unlocked_skins') || '["mario"]');
+  let currentSkin = localStorage.getItem('mario_current_skin') || 'mario';
 
   let activeShield = false;
   let activeStar = false;
@@ -731,7 +754,7 @@
   const bossHearts = document.getElementById('boss-hearts');
 
   function renderHero() {
-    playerBox.innerHTML = currentSkin === 'alt' ? SPRITES.luigi : SPRITES.mario;
+    playerBox.innerHTML = SPRITES[currentSkin] || SPRITES.mario;
   }
 
   function updateStatusBadges() {
@@ -815,8 +838,8 @@
     } else {
       appEl.classList.remove('boss-theme');
       bossHpWrap.style.display = 'none';
-      const list = [SPRITES.goomba, SPRITES.koopa, SPRITES.piranha];
-      enemyBox.innerHTML = list[(currentRound - 1) % list.length];
+      // 前 4 關為栗寶寶，第 5~9 關為食人花
+      enemyBox.innerHTML = currentRound <= 4 ? SPRITES.goomba : SPRITES.piranha;
     }
   }
 
@@ -1023,18 +1046,65 @@
     appEl.classList.add('screen-shake');
   }
 
-  /* ================= 商店與造型系統 ================= */
+  /* ================= 多角色商城系統 ================= */
   function openShop() {
     clearInterval(timerInterval);
     document.getElementById('shop-coin-display').textContent = totalCoins;
-    const skinBtn = document.getElementById('btn-skin-unlock');
-    if (unlockedSkins.includes('alt')) {
-      skinBtn.textContent = currentSkin === 'alt' ? "切換瑪利歐" : "切換路易吉";
-      skinBtn.disabled = false;
-    } else {
-      skinBtn.textContent = "解鎖 (100 幣)";
-    }
+    refreshShopUI();
     shopModal.style.display = 'flex';
+  }
+
+  function refreshShopUI() {
+    const skins = ['mario', 'luigi', 'peach', 'yoshi', 'cinnamon'];
+    const prices = { luigi: 60, peach: 80, yoshi: 100, cinnamon: 150 };
+
+    skins.forEach(s => {
+      const btn = document.getElementById(`btn-skin-${s}`);
+      if (!btn) return;
+
+      if (currentSkin === s) {
+        btn.textContent = "使用中";
+        btn.disabled = true;
+        btn.style.background = "#22c55e";
+      } else if (unlockedSkins.includes(s)) {
+        btn.textContent = "切換";
+        btn.disabled = false;
+        btn.style.background = "#f59e0b";
+        btn.onclick = () => selectSkin(s);
+      } else {
+        btn.textContent = `解鎖 (${prices[s]})`;
+        btn.disabled = false;
+        btn.style.background = "#0284c7";
+        btn.onclick = () => buySkin(s, prices[s]);
+      }
+    });
+  }
+
+  function selectSkin(skinId) {
+    currentSkin = skinId;
+    localStorage.setItem('mario_current_skin', currentSkin);
+    renderHero();
+    refreshShopUI();
+    sndPowerUp();
+  }
+
+  function buySkin(skinId, price) {
+    if (totalCoins < price) {
+      alert("🪙 金幣不夠喔！多答對題目賺取金幣吧！");
+      return;
+    }
+    totalCoins -= price;
+    unlockedSkins.push(skinId);
+    currentSkin = skinId;
+    localStorage.setItem('mario_total_coins', totalCoins);
+    localStorage.setItem('mario_unlocked_skins', JSON.stringify(unlockedSkins));
+    localStorage.setItem('mario_current_skin', currentSkin);
+    updateCoinUI();
+    renderHero();
+    document.getElementById('shop-coin-display').textContent = totalCoins;
+    refreshShopUI();
+    sndPowerUp();
+    alert("🎉 恭喜解鎖全新角色造型！");
   }
 
   function closeShop() {
@@ -1059,31 +1129,6 @@
 
     updateStatusBadges();
     alert("🎉 購買成功！道具已生效！");
-  }
-
-  function buySkin(price) {
-    if (unlockedSkins.includes('alt')) {
-      currentSkin = currentSkin === 'alt' ? 'default' : 'alt';
-      localStorage.setItem('mario_current_skin', currentSkin);
-      renderHero();
-      openShop();
-      return;
-    }
-    if (totalCoins < price) {
-      alert("🪙 金幣不夠喔！");
-      return;
-    }
-    totalCoins -= price;
-    unlockedSkins.push('alt');
-    currentSkin = 'alt';
-    localStorage.setItem('mario_total_coins', totalCoins);
-    localStorage.setItem('mario_unlocked_skins', JSON.stringify(unlockedSkins));
-    localStorage.setItem('mario_current_skin', currentSkin);
-    updateCoinUI();
-    renderHero();
-    sndPowerUp();
-    alert("🎉 恭喜解鎖 路易吉 造型！");
-    openShop();
   }
 
   /* ================= 結束結算並自動回到主畫面 ================= */
