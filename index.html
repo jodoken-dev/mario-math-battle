@@ -56,11 +56,11 @@
 
   #header {
     background: rgba(0, 0, 0, 0.85);
-    padding: 10px 6px;
+    padding: 10px 5px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     color: #ffffff;
     z-index: 30;
@@ -72,9 +72,9 @@
     border: 2px solid #ffffff;
     color: #000;
     font-family: inherit;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
-    padding: 4px 6px;
+    padding: 4px 5px;
     border-radius: 8px;
     cursor: pointer;
   }
@@ -185,7 +185,6 @@
     border: 1.5px solid #ffd700;
   }
 
-  /* 怪物愛心血量顯示（幽靈與庫巴通用） */
   #boss-hp-wrap {
     position: absolute;
     top: 115px;
@@ -437,6 +436,52 @@
     100% { transform: translate3d(0, -50px, 0) scale(1.25); opacity: 0; }
   }
 
+  /* ✏️ 手指草稿白板專屬浮層樣式 */
+  #scratchpad-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(2px);
+    z-index: 45;
+    display: none;
+    flex-direction: column;
+  }
+  #scratchpad-toolbar {
+    background: rgba(0, 0, 0, 0.9);
+    padding: 8px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #334155;
+    z-index: 46;
+  }
+  .color-dots-wrap {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .color-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    cursor: pointer;
+  }
+  .color-dot.active {
+    transform: scale(1.25);
+    box-shadow: 0 0 8px #fff;
+  }
+  #pad-canvas {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    touch-action: none;
+  }
+
   .modal-screen {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -571,6 +616,7 @@
     <div>🪙 <span id="coin-total">0</span></div>
     <div>RD <span id="round-count">1</span>/10</div>
     <div><span id="lives-display">❤️❤️❤️</span></div>
+    <button class="btn-top" onclick="toggleScratchpad()">✏️ 草稿</button>
     <button class="btn-top" onclick="openShop()">🏪 商店</button>
     <button class="btn-top" onclick="openReviewModal()">📝 錯題</button>
     <button class="btn-top" id="bgm-toggle-btn" onclick="toggleBGM()">🎵 ON</button>
@@ -616,6 +662,23 @@
     <button class="btn-option" onclick="handleChoice(1)" id="opt-1">-</button>
     <button class="btn-option" onclick="handleChoice(2)" id="opt-2">-</button>
     <button class="btn-option" onclick="handleChoice(3)" id="opt-3">-</button>
+  </div>
+
+  <!-- ✏️ 手指草稿白板浮層 -->
+  <div id="scratchpad-layer">
+    <div id="scratchpad-toolbar">
+      <div class="color-dots-wrap">
+        <div class="color-dot active" style="background:#fde047;" onclick="setPenColor('#fde047', this)"></div>
+        <div class="color-dot" style="background:#38bdf8;" onclick="setPenColor('#38bdf8', this)"></div>
+        <div class="color-dot" style="background:#f43f5e;" onclick="setPenColor('#f43f5e', this)"></div>
+        <div class="color-dot" style="background:#ffffff;" onclick="setPenColor('#ffffff', this)"></div>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button class="btn-top" style="background:#ef4444; color:#fff;" onclick="clearScratchpad()">🧹 清空</button>
+        <button class="btn-top" style="background:#22c55e; color:#fff;" onclick="toggleScratchpad()">✖ 關閉</button>
+      </div>
+    </div>
+    <canvas id="pad-canvas"></canvas>
   </div>
 
   <!-- 主畫面難度選單 -->
@@ -752,8 +815,7 @@
   const TOTAL_ROUNDS = 10;
   let lives = 3;
 
-  /* 👾 怪物型態與血量管理 */
-  let currentEnemyType = 'goomba'; // goomba, piranha, bobomb, boo, bowser
+  let currentEnemyType = 'goomba';
   let currentEnemyHp = 1;
   let currentEnemyMaxHp = 1;
 
@@ -767,6 +829,80 @@
   let timeLeft = 8;
   let maxTime = 8;
   let timerInterval = null;
+
+  /* ================= ✏️ 手指草稿白板邏輯 ================= */
+  const scratchpadLayer = document.getElementById('scratchpad-layer');
+  const padCanvas = document.getElementById('pad-canvas');
+  const padCtx = padCanvas.getContext('2d');
+  let isDrawing = false;
+  let penColor = '#fde047';
+  let penWidth = 4;
+
+  function resizeScratchpad() {
+    const rect = scratchpadLayer.getBoundingClientRect();
+    padCanvas.width = rect.width;
+    padCanvas.height = rect.height - 45; // 扣除工具列高度
+  }
+
+  function toggleScratchpad() {
+    if (scratchpadLayer.style.display === 'flex') {
+      scratchpadLayer.style.display = 'none';
+    } else {
+      scratchpadLayer.style.display = 'flex';
+      resizeScratchpad();
+    }
+  }
+
+  function setPenColor(color, el) {
+    penColor = color;
+    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+    if (el) el.classList.add('active');
+  }
+
+  function clearScratchpad() {
+    padCtx.clearRect(0, 0, padCanvas.width, padCanvas.height);
+  }
+
+  function getCanvasCoords(e) {
+    const rect = padCanvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  }
+
+  function startDraw(e) {
+    isDrawing = true;
+    const pos = getCanvasCoords(e);
+    padCtx.beginPath();
+    padCtx.moveTo(pos.x, pos.y);
+    padCtx.strokeStyle = penColor;
+    padCtx.lineWidth = penWidth;
+    padCtx.lineCap = 'round';
+    padCtx.lineJoin = 'round';
+  }
+
+  function drawMove(e) {
+    if (!isDrawing) return;
+    const pos = getCanvasCoords(e);
+    padCtx.lineTo(pos.x, pos.y);
+    padCtx.stroke();
+  }
+
+  function stopDraw() {
+    isDrawing = false;
+    padCtx.closePath();
+  }
+
+  padCanvas.addEventListener('mousedown', startDraw);
+  padCanvas.addEventListener('mousemove', drawMove);
+  window.addEventListener('mouseup', stopDraw);
+
+  padCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e); }, { passive: false });
+  padCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); drawMove(e); }, { passive: false });
+  window.addEventListener('touchend', stopDraw);
 
   /* ================= 音訊載入與音效控制 ================= */
   const bgmAudio = new Audio('bgm.mp3');
@@ -974,6 +1110,8 @@
     shopModal.style.display = 'none';
     reviewModal.style.display = 'none';
     lbModal.style.display = 'none';
+    scratchpadLayer.style.display = 'none';
+    clearScratchpad();
     
     setupNewEnemy();
     nextTurn();
@@ -983,14 +1121,12 @@
     livesDisplay.textContent = '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, 3 - lives));
   }
 
-  /* 👾 隨機怪物決定機制 */
   function setupNewEnemy() {
     if (currentRound === TOTAL_ROUNDS) {
       currentEnemyType = 'bowser';
       currentEnemyMaxHp = 5;
       currentEnemyHp = 5;
     } else {
-      // 隨機在 栗寶寶、食人花、炸彈兵、害羞幽靈 中抽籤
       const pool = ['goomba', 'piranha', 'bobomb', 'boo'];
       currentEnemyType = pool[Math.floor(Math.random() * pool.length)];
 
@@ -1257,7 +1393,6 @@
         document.getElementById('battle-stage').appendChild(spark);
         setTimeout(() => spark.remove(), 320);
 
-        // 扣減當前怪物血量
         currentEnemyHp--;
         if (currentEnemyType === 'bowser' || currentEnemyType === 'boo') {
           bossHearts.textContent = '❤️'.repeat(Math.max(0, currentEnemyHp)) + '🖤'.repeat(Math.max(0, currentEnemyMaxHp - currentEnemyHp));
@@ -1281,23 +1416,20 @@
         playerBox.classList.remove('player-stomp-anim');
         playerBox.classList.add('idle-anim');
 
-        // 怪物如果還有血（幽靈/庫巴），繼續留在本輪答下一題
         if (currentEnemyHp > 0) {
           nextTurn();
         } else {
-          // 怪物死亡，判定是否為最終 Boss
           if (currentRound >= TOTAL_ROUNDS) {
             endBattle(true);
           } else {
             currentRound++;
-            setupNewEnemy(); // 換下一隻隨機怪物
+            setupNewEnemy();
             nextTurn();
           }
         }
       }, 920);
 
     } else {
-      /* 📝 記錄錯題資訊 */
       sessionWrongQuestions.push({
         q: `${currentQuestionFormula} = ?`,
         user: chosen === -999 ? "超時未答" : chosen,
@@ -1324,7 +1456,6 @@
         document.getElementById('battle-stage').appendChild(hitSpark);
         setTimeout(() => hitSpark.remove(), 320);
 
-        // 💣 炸彈兵扣 2 顆心，其餘怪物扣 1 顆心
         const damage = (currentEnemyType === 'bobomb') ? 2 : 1;
 
         if (shieldCount > 0) {
@@ -1334,7 +1465,7 @@
           sndPowerUp();
           playerBox.classList.remove('idle-anim');
           playerBox.classList.add('player-hurt-anim');
-          qText.textContent = `🛡️ 護盾抵擋傷害！(剩餘 ${shieldCount} 層)`;
+          qText.textContent = `🛡️ 護盾抵擋！(剩餘 ${shieldCount} 層)`;
           setTimeout(nextTurn, 1000);
           return;
         }
@@ -1530,6 +1661,7 @@
       bossAudio.pause();
       winAudio.pause();
       appEl.classList.remove('boss-theme');
+      scratchpadLayer.style.display = 'none';
 
       if (sessionWrongQuestions.length > 0) {
         openReviewModal();
