@@ -173,7 +173,6 @@
     transform-origin: bottom center;
   }
 
-  /* 調整香菇從水管升起的動畫：更慢、更明顯 */
   .enemy-emerge-anim {
     animation: pipeEmerge 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   }
@@ -453,12 +452,16 @@
     `,
     spark: `
       <svg viewBox="0 0 100 100" width="100%" height="100%">
-        <polygon points="50,0 60,35 95,50 60,65 50,100 40,65 5,50 40,35" fill="#fde047" stroke="#ffffff" stroke-width="4"/>
+        <polygon points="50,0 60,35 95,50 60,65 50,100 40,65 50,100 40,65 5,50 40,35" fill="#fde047" stroke="#ffffff" stroke-width="4"/>
       </svg>
     `
   };
 
-  /* ================= 8-bit 音效與經典 BGM 引擎 ================= */
+  /* ================= 經典 BGM 音檔載入與音效控制 ================= */
+  const bgmAudio = new Audio('bgm.mp3');
+  bgmAudio.loop = true;
+  bgmAudio.volume = 0.55;
+
   let actx = null;
   function getAudioContext() {
     if (!actx) {
@@ -472,7 +475,6 @@
   window.addEventListener('keydown', () => { getAudioContext(); }, { once: false });
 
   let isBGMEnabled = true;
-  let bgmTimer = null;
 
   function playTone(freq, type, dur, gainVal = 0.15) {
     try {
@@ -481,12 +483,9 @@
       const g = ctx.createGain();
       osc.type = type;
       osc.frequency.setValueAtTime(freq, ctx.currentTime);
-      
-      // 修復聲音太短的問題：讓音符有足夠的延音(Sustain)時間再淡出
       g.gain.setValueAtTime(gainVal, ctx.currentTime);
       g.gain.setValueAtTime(gainVal, ctx.currentTime + dur - 0.03); 
       g.gain.linearRampToValueAtTime(0.001, ctx.currentTime + dur);
-      
       osc.connect(g);
       g.connect(ctx.destination);
       osc.start();
@@ -501,55 +500,29 @@
   function sndJump() {
     [150, 300, 450, 600].forEach((p, idx) => setTimeout(() => playTone(p, 'square', 0.05, 0.12), idx * 25));
   }
-  function sndStomp() { playTone(160, 'triangle', 0.2, 0.4); }
-  function sndWrong() { playTone(120, 'sawtooth', 0.3, 0.2); }
+  function sndStomp() { playTone(160, 'triangle', 0.2, 0.45); }
+  function sndWrong() { playTone(120, 'sawtooth', 0.3, 0.25); }
   function sndPipe() {
     [300, 350, 400, 450].forEach((f, i) => setTimeout(() => playTone(f, 'sine', 0.08, 0.12), i * 35));
   }
 
-  // 擴充版瑪利歐主題曲樂譜
-  const MARIO_THEME_NOTES = [
-    [659.25, 0.15], [659.25, 0.15], [0, 0.15], [659.25, 0.15], [0, 0.15], [523.25, 0.15], [659.25, 0.15], [0, 0.15],
-    [783.99, 0.3], [0, 0.3], [392.00, 0.3], [0, 0.3],
-    [523.25, 0.22], [0, 0.15], [392.00, 0.22], [0, 0.15], [329.63, 0.22], [0, 0.15],
-    [440.00, 0.18], [493.88, 0.18], [466.16, 0.15], [440.00, 0.22],
-    [392.00, 0.15], [659.25, 0.15], [783.99, 0.15], [880.00, 0.22], [698.46, 0.15], [783.99, 0.15],
-    [0, 0.15], [659.25, 0.18], [523.25, 0.15], [587.33, 0.15], [493.88, 0.22], [0, 0.2],
-    [523.25, 0.22], [0, 0.15], [392.00, 0.22], [0, 0.15], [329.63, 0.22], [0, 0.15],
-    [440.00, 0.18], [493.88, 0.18], [466.16, 0.15], [440.00, 0.22],
-    [392.00, 0.15], [659.25, 0.15], [783.99, 0.15], [880.00, 0.22], [698.46, 0.15], [783.99, 0.15],
-    [0, 0.15], [659.25, 0.18], [523.25, 0.15], [587.33, 0.15], [493.88, 0.22], [0, 0.4]
-  ];
-
-  let currentNoteIdx = 0;
-  function playNextBGMNote() {
-    if (!isBGMEnabled) return;
-    const [freq, dur] = MARIO_THEME_NOTES[currentNoteIdx];
-    if (freq > 0) {
-      playTone(freq, 'triangle', dur * 0.9, 0.06);
-    }
-    currentNoteIdx = (currentNoteIdx + 1) % MARIO_THEME_NOTES.length;
-    bgmTimer = setTimeout(playNextBGMNote, dur * 1000);
-  }
-
   function startBGM() {
-    if (bgmTimer) clearTimeout(bgmTimer);
-    currentNoteIdx = 0;
-    playNextBGMNote();
+    if (isBGMEnabled) {
+      bgmAudio.play().catch(e => console.log('等待點擊互動啟動音樂'));
+    }
   }
 
   function toggleBGM() {
-    getAudioContext();
     isBGMEnabled = !isBGMEnabled;
     const btn = document.getElementById('bgm-toggle-btn');
     if (isBGMEnabled) {
       btn.textContent = '🎵 ON';
       btn.style.background = '#f59e0b';
-      startBGM();
+      bgmAudio.play();
     } else {
       btn.textContent = '🔇 OFF';
       btn.style.background = '#64748b';
-      if (bgmTimer) clearTimeout(bgmTimer);
+      bgmAudio.pause();
     }
   }
 
@@ -613,12 +586,11 @@
     isActionLocked = false;
     roundCount.textContent = `${currentRound}`;
     
-    // 修復香菇沒升起來的問題：確保瀏覽器順利切換 Class 渲染動畫
     enemyBox.classList.remove('enemy-squished', 'idle-anim', 'enemy-emerge-anim');
     setTimeout(() => {
       enemyBox.classList.add('enemy-emerge-anim');
       sndPipe();
-    }, 20); // 給瀏覽器極短暫的間隔來重置動畫狀態
+    }, 20);
     
     setTimeout(() => {
       if (!enemyBox.classList.contains('enemy-squished')) {
