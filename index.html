@@ -40,7 +40,6 @@
     transition: background 0.5s ease;
   }
 
-  /* Boss 關卡背景切換為地下城堡暗色系 */
   #game-app.boss-theme {
     background: #1e1b4b;
   }
@@ -372,12 +371,26 @@
     z-index: 50;
     text-align: center;
   }
-  .modal-title { font-size: 18px; font-weight: 700; color: #fde047; margin-bottom: 10px; text-shadow: 2px 2px #c2410c; }
-  .modal-desc { font-size: 12px; color: #94a3b8; margin-bottom: 12px; font-weight: 700; }
+
+  /* 主畫面大字體排版 */
+  .modal-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fde047;
+    margin-bottom: 6px;
+    text-shadow: 2px 2px #c2410c;
+    letter-spacing: 1px;
+  }
+  .modal-desc {
+    font-size: 13px;
+    color: #cbd5e1;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
 
   .mode-group-title {
     width: 100%;
-    font-size: 12px;
+    font-size: 14px;
     color: #38bdf8;
     text-align: left;
     margin: 6px 0 4px;
@@ -387,14 +400,14 @@
   .mode-btn {
     width: 100%;
     background: #0284c7;
-    border: 2px solid #ffffff;
+    border: 3px solid #ffffff;
     box-shadow: inset -2px -2px 0 #0369a1, inset 2px 2px 0 #38bdf8, 0 3px 0 #000;
     color: #ffffff;
     font-family: inherit;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
     padding: 10px 8px;
-    border-radius: 10px;
+    border-radius: 12px;
     margin-bottom: 6px;
     cursor: pointer;
     text-align: center;
@@ -416,22 +429,22 @@
     margin-bottom: 8px;
     border-radius: 8px;
   }
-  .shop-item-info { text-align: left; font-size: 11px; font-weight: 700; }
-  .shop-item-info small { color: #94a3b8; font-size: 9px; display: block; margin-top: 2px; }
+  .shop-item-info { text-align: left; font-size: 12px; font-weight: 700; }
+  .shop-item-info small { color: #94a3b8; font-size: 10px; display: block; margin-top: 2px; }
   .shop-buy-btn {
     background: #f59e0b;
     border: 2px solid #fff;
     font-family: inherit;
-    font-size: 11px;
-    padding: 6px 10px;
-    border-radius: 6px;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 8px;
     cursor: pointer;
     color: #000;
     font-weight: 700;
   }
   .shop-buy-btn:disabled { background: #64748b; color: #cbd5e1; cursor: not-allowed; }
 
-  .lb-table { width: 100%; font-size: 12px; font-weight: 700; margin-bottom: 14px; border-collapse: collapse; }
+  .lb-table { width: 100%; font-size: 13px; font-weight: 700; margin-bottom: 14px; border-collapse: collapse; }
   .lb-table th { color: #38bdf8; padding: 6px 4px; border-bottom: 2px solid #334155; }
   .lb-table td { padding: 6px 4px; text-align: center; border-bottom: 1px solid #1e293b; }
 </style>
@@ -489,20 +502,20 @@
     <button class="btn-option" onclick="handleChoice(3)" id="opt-3">-</button>
   </div>
 
-  <!-- 難度選單 -->
+  <!-- 主畫面難度選單（大字體） -->
   <div id="modal-box" class="modal-screen">
-    <h1 class="modal-title">SUPER MARIO<br>MATH BATTLE</h1>
-    <p class="modal-desc">請選擇訓練等級：</p>
+    <h1 class="modal-title">🍄 瑪利歐數學大冒險</h1>
+    <p class="modal-desc">請小朋友選擇關卡難度：</p>
     
-    <div class="mode-group-title">➕ ➖ 加減法冒險</div>
+    <div class="mode-group-title">➕ ➖ 加法與減法挑戰</div>
     <button class="mode-btn" onclick="startBattle('10')">🍄 10 以內加減法</button>
     <button class="mode-btn" onclick="startBattle('100')">⭐ 100 以內加減法</button>
-    <button class="mode-btn" onclick="startBattle('1000')">👑 1000 以內直式挑戰</button>
+    <button class="mode-btn" onclick="startBattle('1000')">👑 1000 以內大冒險</button>
     
-    <div class="mode-group-title">✖️ 九九乘法表冒險</div>
+    <div class="mode-group-title">✖️ 九九乘法表挑戰</div>
     <button class="mode-btn mul" onclick="startBattle('mul_2_5')">🌸 2 ~ 5 乘法表</button>
     <button class="mode-btn mul" onclick="startBattle('mul_5_6')">⚡ 5 ~ 6 乘法表</button>
-    <button class="mode-btn mul" onclick="startBattle('mul_2_9')">🔥 2 ~ 9 乘法全階段</button>
+    <button class="mode-btn mul" onclick="startBattle('mul_2_9')">🔥 2 ~ 9 乘法全挑戰</button>
   </div>
 
   <!-- 道具商城 -->
@@ -627,7 +640,7 @@
     `,
     spark: `
       <svg viewBox="0 0 100 100" width="100%" height="100%">
-        <polygon points="50,0 60,35 95,50 60,65 50,100 40,65 5,50 40,35" fill="#fde047" stroke="#ffffff" stroke-width="4"/>
+        <polygon points="50,0 60,35 95,50 60,65 50,100 40,65 50,100 40,65 5,50 40,35" fill="#fde047" stroke="#ffffff" stroke-width="4"/>
       </svg>
     `
   };
@@ -643,7 +656,7 @@
 
   let currentDifficulty = '10';
   let currentRound = 1;
-  const TOTAL_ROUNDS = 10; // 改為 10 道題
+  const TOTAL_ROUNDS = 10;
   let lives = 3;
   let bossHp = 3;
   let correctAnswer = 0;
@@ -659,7 +672,7 @@
   bgmAudio.loop = true;
   bgmAudio.volume = 0.55;
 
-  const bossAudio = new Audio('boss.mp3'); // Boss 戰專屬音樂
+  const bossAudio = new Audio('boss.mp3');
   bossAudio.loop = true;
   bossAudio.volume = 0.6;
 
@@ -721,7 +734,6 @@
     });
   }
 
-  /* 音樂動態切換：一般關卡播 bgm.mp3，Boss 關卡播 boss.mp3 */
   function updateBGMState() {
     if (!isBGMEnabled) {
       bgmAudio.pause();
@@ -1078,7 +1090,7 @@
 
   function closeShop() {
     shopModal.style.display = 'none';
-    if (!isActionLocked) startTimer();
+    if (!isActionLocked && modalBox.style.display === 'none') startTimer();
   }
 
   function buyItem(type, price) {
@@ -1125,21 +1137,25 @@
     openShop();
   }
 
-  /* ================= 自動重啟與紀錄系統 ================= */
+  /* ================= 結束結算並自動回到主畫面 ================= */
   function endBattle(isWin) {
     clearInterval(timerInterval);
     isActionLocked = true;
     
     saveScore(totalCoins, currentDifficulty, isWin);
 
-    qText.textContent = isWin ? "🏆 通關成功！" : "💀 再接再厲！";
+    qText.textContent = isWin ? "🏆 恭喜通關！" : "💀 再接再厲！";
     for (let i = 0; i < 4; i++) {
       document.getElementById(`opt-${i}`).textContent = "-";
     }
 
+    // 2.2 秒後停止音樂並彈出放大的難度主畫面
     setTimeout(() => {
-      startBattle(currentDifficulty);
-    }, 2500);
+      bgmAudio.pause();
+      bossAudio.pause();
+      appEl.classList.remove('boss-theme');
+      showDifficultyMenu();
+    }, 2200);
   }
 
   function saveScore(coins, mode, isWin) {
@@ -1178,7 +1194,7 @@
 
   function closeLeaderboard() {
     lbModal.style.display = 'none';
-    if (!isActionLocked) startTimer();
+    if (!isActionLocked && modalBox.style.display === 'none') startTimer();
   }
 
   window.addEventListener('keydown', (e) => {
