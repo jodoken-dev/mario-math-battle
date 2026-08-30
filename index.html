@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🍄 數學大冒險 & 決鬥</title>
+<title>🍄 數學大冒險 & 決鬥 - 終極旗艦版</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   * {
@@ -53,12 +53,12 @@
   }
 
   #header {
-    background: rgba(0, 0, 0, 0.8);
-    padding: 10px 8px;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 8px 8px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 10px;
+    font-size: 9px;
     color: #ffffff;
     text-shadow: 2px 2px #000000;
     z-index: 30;
@@ -77,6 +77,21 @@
     cursor: pointer;
   }
   .btn-top:active { transform: translateY(2px); }
+
+  /* 倒數計時條 */
+  #timer-bar-wrap {
+    width: 100%;
+    height: 6px;
+    background: #1e293b;
+    z-index: 29;
+    border-bottom: 2px solid #000;
+  }
+  #timer-bar {
+    width: 100%;
+    height: 100%;
+    background: #22c55e;
+    transition: width 0.1s linear, background-color 0.3s;
+  }
 
   #battle-stage {
     flex: 1;
@@ -134,12 +149,12 @@
 
   .question-block {
     position: absolute;
-    top: 12px;
+    top: 10px;
     left: 5%;
     width: 90%;
     border-radius: 10px;
     text-align: center;
-    padding: 12px 10px;
+    padding: 10px 8px;
     animation: floatBlock 2.2s infinite ease-in-out;
     z-index: 25;
   }
@@ -160,12 +175,44 @@
   }
 
   .q-math {
-    font-size: 22px;
+    font-size: 20px;
     letter-spacing: 2px;
     font-weight: 900;
   }
   .theme-mario .q-math { color: #000000; }
   .theme-yugi .q-math { color: #fde047; text-shadow: 0 0 8px #f59e0b; }
+
+  /* 提示標籤與道具狀態 */
+  #status-indicator {
+    position: absolute;
+    top: 72px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    z-index: 26;
+  }
+  .status-badge {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 8px;
+    border: 1px solid #ffd700;
+  }
+
+  /* Boss 血條面板 */
+  #boss-hp-wrap {
+    position: absolute;
+    top: 96px;
+    right: 25px;
+    display: none;
+    flex-direction: column;
+    align-items: flex-end;
+    z-index: 26;
+  }
+  .boss-label { font-size: 8px; color: #ef4444; font-weight: bold; margin-bottom: 2px; }
+  .boss-hearts { font-size: 11px; }
 
   /* 地面與水管 */
   .ground {
@@ -245,14 +292,13 @@
   #enemy-box {
     position: absolute;
     right: 37px;
-    bottom: 98px; /* 精準置於水管口上方 */
+    bottom: 98px;
     width: 68px;
     height: 68px;
     z-index: 8;
     transform-origin: bottom center;
   }
 
-  /* 瑪利歐輕微呼吸感（不浮空） */
   .idle-anim {
     animation: idleBreathe 1.1s infinite ease-in-out alternate;
   }
@@ -261,7 +307,6 @@
     100% { transform: scale(1.02, 0.96); }
   }
 
-  /* 香菇從水管深處由下往上升起 */
   .enemy-emerge-anim {
     animation: pipeEmerge 0.65s cubic-bezier(0.18, 0.89, 0.32, 1.15) forwards;
   }
@@ -271,38 +316,20 @@
     100% { transform: translateY(0); opacity: 1; }
   }
 
-  /* 瑪利歐擬真打擊拋物線：起跳 -> 俯衝踩怪 -> 頓點反彈 -> 後翻落地 */
   .player-stomp-anim {
     animation: dynamicJumpStomp 0.88s cubic-bezier(0.22, 0.61, 0.36, 1) forwards !important;
   }
   @keyframes dynamicJumpStomp {
-    0% {
-      transform: translate3d(0, 0, 0) scale(1, 1);
-    }
-    15% {
-      transform: translate3d(0, 8px, 0) scale(1.1, 0.85); /* 起跳蓄力壓身 */
-    }
-    45% {
-      transform: translate3d(140px, -145px, 0) rotate(-12deg) scale(0.95, 1.08); /* 拋物線頂點 */
-    }
-    62% {
-      transform: translate3d(245px, -60px, 0) rotate(0deg) scale(1.15, 0.8); /* 踩中怪獸壓扁 */
-    }
-    72% {
-      transform: translate3d(225px, -110px, 0) rotate(15deg) scale(0.95, 1.05); /* 踩怪彈跳升空 */
-    }
-    90% {
-      transform: translate3d(40px, -20px, 0) rotate(5deg) scale(1, 1);
-    }
-    97% {
-      transform: translate3d(0, 4px, 0) scale(1.08, 0.92); /* 落地緩衝 */
-    }
-    100% {
-      transform: translate3d(0, 0, 0) scale(1, 1); /* 恢復原位 */
-    }
+    0% { transform: translate3d(0, 0, 0) scale(1, 1); }
+    15% { transform: translate3d(0, 8px, 0) scale(1.1, 0.85); }
+    45% { transform: translate3d(140px, -145px, 0) rotate(-12deg) scale(0.95, 1.08); }
+    62% { transform: translate3d(245px, -60px, 0) rotate(0deg) scale(1.15, 0.8); }
+    72% { transform: translate3d(225px, -110px, 0) rotate(15deg) scale(0.95, 1.05); }
+    90% { transform: translate3d(40px, -20px, 0) rotate(5deg) scale(1, 1); }
+    97% { transform: translate3d(0, 4px, 0) scale(1.08, 0.92); }
+    100% { transform: translate3d(0, 0, 0) scale(1, 1); }
   }
 
-  /* 香菇被踩扁：變半扁、抖動、沉入水管 */
   .enemy-squished {
     animation: squishAnim 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
   }
@@ -332,7 +359,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
-    padding: 12px 14px 18px;
+    padding: 10px 14px 16px;
     background: #000000;
     width: 100%;
     border-top: 4px solid #ffffff;
@@ -342,9 +369,9 @@
   .btn-option {
     border: 4px solid #ffffff;
     font-family: inherit;
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 900;
-    padding: 15px 0;
+    padding: 14px 0;
     border-radius: 10px;
     cursor: pointer;
     text-align: center;
@@ -364,7 +391,7 @@
 
   .coin-fx {
     position: absolute;
-    font-size: 22px;
+    font-size: 20px;
     color: #ffd700;
     text-shadow: 2px 2px #000;
     font-weight: 900;
@@ -389,15 +416,15 @@
     z-index: 50;
     text-align: center;
   }
-  .modal-title { font-size: 16px; color: #fde047; margin-bottom: 10px; text-shadow: 2px 2px #c2410c; }
-  .modal-desc { font-size: 11px; color: #94a3b8; margin-bottom: 12px; font-family: sans-serif; font-weight: bold; }
+  .modal-title { font-size: 15px; color: #fde047; margin-bottom: 8px; text-shadow: 2px 2px #c2410c; }
+  .modal-desc { font-size: 10px; color: #94a3b8; margin-bottom: 10px; font-family: sans-serif; font-weight: bold; }
 
   .mode-group-title {
     width: 100%;
-    font-size: 11px;
+    font-size: 10px;
     color: #38bdf8;
     text-align: left;
-    margin: 6px 0 4px;
+    margin: 5px 0 3px;
     font-family: sans-serif;
     font-weight: bold;
   }
@@ -409,11 +436,11 @@
     box-shadow: inset -2px -2px 0 #0369a1, inset 2px 2px 0 #38bdf8, 0 3px 0 #000;
     color: #ffffff;
     font-family: inherit;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 900;
-    padding: 9px 6px;
+    padding: 8px 6px;
     border-radius: 8px;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
     cursor: pointer;
     text-align: center;
   }
@@ -423,9 +450,36 @@
     box-shadow: inset -2px -2px 0 #047857, inset 2px 2px 0 #34d399, 0 3px 0 #000;
   }
 
-  .lb-table { width: 100%; font-size: 11px; margin-bottom: 16px; border-collapse: collapse; }
-  .lb-table th { color: #38bdf8; padding: 6px 4px; border-bottom: 2px solid #334155; }
-  .lb-table td { padding: 6px 4px; text-align: center; border-bottom: 1px solid #1e293b; }
+  /* 商店清單樣式 */
+  .shop-item-row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #1e293b;
+    border: 2px solid #334155;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+  }
+  .shop-item-info { text-align: left; font-size: 9px; }
+  .shop-item-info small { color: #94a3b8; font-size: 8px; font-family: sans-serif; display: block; margin-top: 2px; }
+  .shop-buy-btn {
+    background: #f59e0b;
+    border: 2px solid #fff;
+    font-family: inherit;
+    font-size: 9px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #000;
+    font-weight: bold;
+  }
+  .shop-buy-btn:disabled { background: #64748b; color: #cbd5e1; cursor: not-allowed; }
+
+  .lb-table { width: 100%; font-size: 10px; margin-bottom: 14px; border-collapse: collapse; }
+  .lb-table th { color: #38bdf8; padding: 5px 4px; border-bottom: 2px solid #334155; }
+  .lb-table td { padding: 5px 4px; text-align: center; border-bottom: 1px solid #1e293b; }
 </style>
 </head>
 <body class="theme-mario">
@@ -435,10 +489,15 @@
     <div>🪙 <span id="coin-total">0</span></div>
     <div>RD <span id="round-count">1</span>/5</div>
     <div><span id="lives-display">❤️❤️❤️</span></div>
+    <button class="btn-top" onclick="openShop()">🏪 商店</button>
     <button class="btn-top" id="theme-btn" onclick="toggleTheme()">🎨 換皮</button>
     <button class="btn-top" id="bgm-toggle-btn" onclick="toggleBGM()">🎵 ON</button>
     <button class="btn-top" onclick="showDifficultyMenu()">⚙️ 難度</button>
     <button class="btn-top" onclick="openLeaderboard()">🏆 榜</button>
+  </div>
+
+  <div id="timer-bar-wrap">
+    <div id="timer-bar"></div>
   </div>
 
   <div id="battle-stage">
@@ -457,6 +516,13 @@
       <div class="q-math" id="q-text">-- + --</div>
     </div>
 
+    <div id="status-indicator"></div>
+
+    <div id="boss-hp-wrap">
+      <span class="boss-label">🔥 BOSS HP</span>
+      <span class="boss-hearts" id="boss-hearts">❤️❤️❤️</span>
+    </div>
+
     <div class="sprite-box idle-anim" id="player-box"></div>
     <div class="sprite-box" id="enemy-box"></div>
 
@@ -471,6 +537,7 @@
     <button class="btn-option" onclick="handleChoice(3)" id="opt-3">-</button>
   </div>
 
+  <!-- 難度選單 -->
   <div id="modal-box" class="modal-screen">
     <h1 class="modal-title" id="menu-title">SUPER MARIO<br>MATH BATTLE</h1>
     <p class="modal-desc">請選擇訓練等級：</p>
@@ -486,6 +553,32 @@
     <button class="mode-btn mul" onclick="startBattle('mul_2_9')">🔥 2 ~ 9 乘法全階段</button>
   </div>
 
+  <!-- 道具商城視窗 -->
+  <div id="shop-modal" class="modal-screen" style="display:none;">
+    <h1 class="modal-title">🏪 奇諾比奧 / 卡片道具屋</h1>
+    <p class="modal-desc">持有金幣：🪙 <span id="shop-coin-display">0</span></p>
+    
+    <div class="shop-item-row">
+      <div class="shop-item-info">🍄 超級蘑菇 (30 幣)<small>免死金牌：抵擋 1 次答錯扣血</small></div>
+      <button class="shop-buy-btn" onclick="buyItem('shield', 30)">購買</button>
+    </div>
+    <div class="shop-item-row">
+      <div class="shop-item-info">⭐ 無敵星星 (50 幣)<small>下一題獲得 3 倍金幣獎勵</small></div>
+      <button class="shop-buy-btn" onclick="buyItem('star', 50)">購買</button>
+    </div>
+    <div class="shop-item-row">
+      <div class="shop-item-info">⏰ 停頓時鐘 (20 幣)<small>額外增加 5 秒作答時間</small></div>
+      <button class="shop-buy-btn" onclick="buyItem('clock', 20)">購買</button>
+    </div>
+    <div class="shop-item-row">
+      <div class="shop-item-info">🎽 解鎖造型 (100 幣)<small>解鎖 路易吉 / 黑魔導 外觀</small></div>
+      <button class="shop-buy-btn" id="btn-skin-unlock" onclick="buySkin(100)">解鎖造型</button>
+    </div>
+
+    <button class="mode-btn" style="background:#dc2626; margin-top:8px;" onclick="closeShop()">離開商店</button>
+  </div>
+
+  <!-- 排行榜視窗 -->
   <div id="lb-modal" class="modal-screen" style="display:none;">
     <h1 class="modal-title">🏆 TOP 10 冒險英雄榜</h1>
     <table class="lb-table">
@@ -497,6 +590,7 @@
 </div>
 
 <script>
+  /* ================= 豐富角色與怪物圖鑑向量美術 ================= */
   const SVGS = {
     mario: `
       <svg viewBox="0 0 100 120" width="76" height="90">
@@ -516,6 +610,23 @@
         <ellipse cx="64" cy="110" rx="14" ry="8" fill="#78350f" stroke="#000" stroke-width="3"/>
       </svg>
     `,
+    luigi: `
+      <svg viewBox="0 0 100 120" width="76" height="92">
+        <ellipse cx="50" cy="20" rx="30" ry="16" fill="#16a34a" stroke="#000" stroke-width="3"/>
+        <path d="M 20 26 Q 50 12 80 26 Q 50 36 20 26" fill="#16a34a" stroke="#000" stroke-width="3"/>
+        <ellipse cx="50" cy="16" rx="9" ry="7" fill="#ffffff" stroke="#000" stroke-width="2"/>
+        <ellipse cx="50" cy="48" rx="23" ry="22" fill="#fed7aa" stroke="#000" stroke-width="3"/>
+        <ellipse cx="60" cy="40" rx="4.5" ry="8" fill="#000"/>
+        <ellipse cx="66" cy="46" rx="12" ry="9" fill="#fed7aa" stroke="#000" stroke-width="3"/>
+        <path d="M 32 54 C 42 46 64 48 76 56 C 68 64 46 63 32 54 Z" fill="#451a03" stroke="#000" stroke-width="2.5"/>
+        <ellipse cx="50" cy="84" rx="24" ry="22" fill="#16a34a" stroke="#000" stroke-width="3"/>
+        <path d="M 30 78 L 70 78 L 66 108 L 34 108 Z" fill="#1e3a8a" stroke="#000" stroke-width="3"/>
+        <circle cx="38" cy="84" r="4.5" fill="#facc15" stroke="#000" stroke-width="2"/>
+        <circle cx="62" cy="84" r="4.5" fill="#facc15" stroke="#000" stroke-width="2"/>
+        <ellipse cx="36" cy="112" rx="14" ry="8" fill="#78350f" stroke="#000" stroke-width="3"/>
+        <ellipse cx="64" cy="112" rx="14" ry="8" fill="#78350f" stroke="#000" stroke-width="3"/>
+      </svg>
+    `,
     goomba: `
       <svg viewBox="0 0 100 100" width="68" height="68">
         <path d="M 50 15 C 20 15 12 55 22 68 C 30 78 70 78 78 68 C 88 55 80 15 50 15" fill="#9a3412" stroke="#000" stroke-width="3"/>
@@ -528,6 +639,40 @@
         <polygon points="58,68 62,60 66,68" fill="#fff"/>
         <ellipse cx="32" cy="80" rx="14" ry="8" fill="#000"/>
         <ellipse cx="68" cy="80" rx="14" ry="8" fill="#000"/>
+      </svg>
+    `,
+    koopa: `
+      <svg viewBox="0 0 100 100" width="68" height="72">
+        <ellipse cx="45" cy="55" rx="28" ry="24" fill="#16a34a" stroke="#000" stroke-width="3"/>
+        <ellipse cx="45" cy="55" rx="20" ry="16" fill="#facc15" stroke="#000" stroke-width="2"/>
+        <ellipse cx="65" cy="35" rx="16" ry="14" fill="#facc15" stroke="#000" stroke-width="3"/>
+        <circle cx="70" cy="32" r="4" fill="#000"/>
+        <ellipse cx="30" cy="80" rx="12" ry="7" fill="#f97316" stroke="#000" stroke-width="2"/>
+        <ellipse cx="60" cy="80" rx="12" ry="7" fill="#f97316" stroke="#000" stroke-width="2"/>
+      </svg>
+    `,
+    piranha: `
+      <svg viewBox="0 0 100 100" width="68" height="72">
+        <circle cx="50" cy="38" r="26" fill="#dc2626" stroke="#000" stroke-width="3"/>
+        <circle cx="40" cy="28" r="5" fill="#fff"/>
+        <circle cx="62" cy="45" r="4" fill="#fff"/>
+        <polygon points="30,38 70,38 50,55" fill="#fff" stroke="#000" stroke-width="2"/>
+        <path d="M 50 64 L 50 85" stroke="#16a34a" stroke-width="8"/>
+        <ellipse cx="35" cy="75" rx="12" ry="6" fill="#16a34a" stroke="#000" stroke-width="2"/>
+      </svg>
+    `,
+    bowser: `
+      <svg viewBox="0 0 120 120" width="84" height="84">
+        <!-- 庫巴魔王大頭與尖刺龜殼 -->
+        <ellipse cx="60" cy="65" rx="42" ry="36" fill="#15803d" stroke="#000" stroke-width="4"/>
+        <polygon points="40,35 30,15 50,30" fill="#facc15" stroke="#000" stroke-width="3"/>
+        <polygon points="80,35 90,15 70,30" fill="#facc15" stroke="#000" stroke-width="3"/>
+        <ellipse cx="60" cy="55" rx="28" ry="24" fill="#f59e0b" stroke="#000" stroke-width="3"/>
+        <ellipse cx="50" cy="48" rx="6" ry="8" fill="#ef4444" stroke="#000" stroke-width="2"/>
+        <ellipse cx="70" cy="48" rx="6" ry="8" fill="#ef4444" stroke="#000" stroke-width="2"/>
+        <path d="M 40 68 Q 60 85 80 68" fill="#fff" stroke="#000" stroke-width="3"/>
+        <polygon points="48,68 52,78 56,68" fill="#fff"/>
+        <polygon points="64,68 68,78 72,68" fill="#fff"/>
       </svg>
     `,
     yugi: `
@@ -544,18 +689,37 @@
         <circle cx="50" cy="88" r="2.5" fill="#000"/>
       </svg>
     `,
+    darkmagician: `
+      <svg viewBox="0 0 100 120" width="76" height="92">
+        <!-- 黑魔導高帽與紫魔袍 -->
+        <polygon points="50,0 25,40 75,40" fill="#6b21a8" stroke="#000" stroke-width="3"/>
+        <ellipse cx="50" cy="52" rx="18" ry="16" fill="#fed7aa" stroke="#000" stroke-width="2"/>
+        <ellipse cx="44" cy="50" rx="3" ry="5" fill="#22c55e"/>
+        <ellipse cx="56" cy="50" rx="3" ry="5" fill="#22c55e"/>
+        <path d="M 24 65 L 76 65 L 70 112 L 30 112 Z" fill="#581c87" stroke="#000" stroke-width="3"/>
+        <circle cx="50" cy="75" r="5" fill="#38bdf8"/>
+      </svg>
+    `,
     kuriboh: `
       <svg viewBox="0 0 100 100" width="68" height="68">
         <circle cx="50" cy="50" r="35" fill="#78350f" stroke="#000" stroke-width="3"/>
-        <ellipse cx="50" cy="20" rx="10" ry="8" fill="#78350f"/>
-        <ellipse cx="25" cy="30" rx="8" ry="10" fill="#78350f"/>
-        <ellipse cx="75" cy="30" rx="8" ry="10" fill="#78350f"/>
         <ellipse cx="38" cy="48" rx="8" ry="12" fill="#22c55e" stroke="#000" stroke-width="2"/>
         <ellipse cx="62" cy="48" rx="8" ry="12" fill="#22c55e" stroke="#000" stroke-width="2"/>
         <circle cx="39" cy="46" r="3" fill="#fff"/>
         <circle cx="63" cy="46" r="3" fill="#fff"/>
         <ellipse cx="35" cy="80" rx="8" ry="5" fill="#ca8a04" stroke="#000" stroke-width="2"/>
         <ellipse cx="65" cy="80" rx="8" ry="5" fill="#ca8a04" stroke="#000" stroke-width="2"/>
+      </svg>
+    `,
+    blueeyes: `
+      <svg viewBox="0 0 120 120" width="84" height="84">
+        <!-- 青眼白龍 -->
+        <polygon points="60,10 35,45 85,45" fill="#e0e7ff" stroke="#000" stroke-width="3"/>
+        <ellipse cx="48" cy="40" rx="4" ry="7" fill="#0284c7"/>
+        <ellipse cx="72" cy="40" rx="4" ry="7" fill="#0284c7"/>
+        <polygon points="15,55 45,70 25,90" fill="#c7d2fe" stroke="#000" stroke-width="2"/>
+        <polygon points="105,55 75,70 95,90" fill="#c7d2fe" stroke="#000" stroke-width="2"/>
+        <ellipse cx="60" cy="70" rx="26" ry="32" fill="#e0e7ff" stroke="#000" stroke-width="3"/>
       </svg>
     `,
     spark: `
@@ -565,26 +729,27 @@
     `
   };
 
+  /* ================= 狀態管理與系統變數 ================= */
   let currentTheme = 'mario';
+  let totalCoins = parseInt(localStorage.getItem('mario_total_coins') || '0', 10);
+  let unlockedSkins = JSON.parse(localStorage.getItem('mario_unlocked_skins') || '["default"]');
+  let currentSkin = localStorage.getItem('mario_current_skin') || 'default';
 
-  function toggleTheme() {
-    currentTheme = currentTheme === 'mario' ? 'yugi' : 'mario';
-    document.body.className = `theme-${currentTheme}`;
-    const btn = document.getElementById('theme-btn');
-    const title = document.getElementById('menu-title');
-    
-    if (currentTheme === 'mario') {
-      btn.textContent = '🎨 瑪利歐';
-      title.innerHTML = 'SUPER MARIO<br>MATH BATTLE';
-      playerBox.innerHTML = SVGS.mario;
-      enemyBox.innerHTML = SVGS.goomba;
-    } else {
-      btn.textContent = '🎨 遊戲王';
-      title.innerHTML = 'YU-GI-OH!<br>MATH DUEL';
-      playerBox.innerHTML = SVGS.yugi;
-      enemyBox.innerHTML = SVGS.kuriboh;
-    }
-  }
+  let activeShield = false;
+  let activeStar = false;
+  let extraTimeAdded = 0;
+
+  let currentDifficulty = '10';
+  let currentRound = 1;
+  let lives = 3;
+  let bossHp = 3;
+  let correctAnswer = 0;
+  let isActionLocked = false;
+  let comboCount = 0;
+
+  let timeLeft = 8;
+  let maxTime = 8;
+  let timerInterval = null;
 
   /* ================= 音訊載入與音效控制 ================= */
   const bgmAudio = new Audio('bgm.mp3');
@@ -637,11 +802,12 @@
   function sndPipe() {
     [300, 350, 400, 450].forEach((f, i) => setTimeout(() => playTone(f, 'sine', 0.08, 0.12), i * 35));
   }
-
+  function sndPowerUp() {
+    [330, 392, 659, 523, 587, 784].forEach((f, i) => setTimeout(() => playTone(f, 'sine', 0.1, 0.18), i * 50));
+  }
   function sndGameOver() {
     gameOverAudio.currentTime = 0;
     gameOverAudio.play().catch(e => {
-      // 降級純音效
       [493.88, 587.33, 493.88, 440.00, 392.00, 349.23, 329.63].forEach((f, i) => {
         setTimeout(() => playTone(f, 'triangle', 0.2, 0.2), i * 180);
       });
@@ -669,30 +835,89 @@
     }
   }
 
-  /* ================= 遊戲核心邏輯 ================= */
-  let totalCoins = parseInt(localStorage.getItem('mario_total_coins') || '0', 10);
-  let currentDifficulty = '10';
-  let currentRound = 1;
-  let earnedCoinsThisRound = 0;
-  let lives = 3;
-  let correctAnswer = 0;
-  let isActionLocked = false;
-
+  /* ================= 造型與主題控制 ================= */
   const appEl = document.getElementById('game-app');
   const qText = document.getElementById('q-text');
   const coinTotalEl = document.getElementById('coin-total');
   const roundCount = document.getElementById('round-count');
   const livesDisplay = document.getElementById('lives-display');
   const modalBox = document.getElementById('modal-box');
+  const shopModal = document.getElementById('shop-modal');
   const lbModal = document.getElementById('lb-modal');
   const playerBox = document.getElementById('player-box');
   const enemyBox = document.getElementById('enemy-box');
+  const timerBar = document.getElementById('timer-bar');
+  const statusIndicator = document.getElementById('status-indicator');
+  const bossHpWrap = document.getElementById('boss-hp-wrap');
+  const bossHearts = document.getElementById('boss-hearts');
 
+  function renderHero() {
+    if (currentTheme === 'mario') {
+      playerBox.innerHTML = currentSkin === 'alt' ? SVGS.luigi : SVGS.mario;
+    } else {
+      playerBox.innerHTML = currentSkin === 'alt' ? SVGS.darkmagician : SVGS.yugi;
+    }
+  }
+
+  function toggleTheme() {
+    currentTheme = currentTheme === 'mario' ? 'yugi' : 'mario';
+    document.body.className = `theme-${currentTheme}`;
+    const btn = document.getElementById('theme-btn');
+    const title = document.getElementById('menu-title');
+    
+    if (currentTheme === 'mario') {
+      btn.textContent = '🎨 瑪利歐';
+      title.innerHTML = 'SUPER MARIO<br>MATH BATTLE';
+    } else {
+      btn.textContent = '🎨 遊戲王';
+      title.innerHTML = 'YU-GI-OH!<br>MATH DUEL';
+    }
+    renderHero();
+    updateEnemyVisual();
+  }
+
+  function updateStatusBadges() {
+    let html = '';
+    if (activeShield) html += `<span class="status-badge" style="color:#4ade80;">🍄 護盾啟用中</span>`;
+    if (activeStar) html += `<span class="status-badge" style="color:#fde047;">⭐ 3倍金幣</span>`;
+    if (comboCount > 1) html += `<span class="status-badge" style="color:#f43f5e;">⚡ Combo x${comboCount}</span>`;
+    statusIndicator.innerHTML = html;
+  }
+
+  /* ================= 計時器管理 ================= */
+  function startTimer() {
+    clearInterval(timerInterval);
+    maxTime = 8 + extraTimeAdded;
+    timeLeft = maxTime;
+    extraTimeAdded = 0;
+    updateTimerUI();
+
+    timerInterval = setInterval(() => {
+      timeLeft -= 0.1;
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        handleChoice(-1); // 超時視為答錯
+      } else {
+        updateTimerUI();
+      }
+    }, 100);
+  }
+
+  function updateTimerUI() {
+    const pct = Math.max(0, (timeLeft / maxTime) * 100);
+    timerBar.style.width = `${pct}%`;
+    if (pct > 50) timerBar.style.backgroundColor = '#22c55e';
+    else if (pct > 25) timerBar.style.backgroundColor = '#eab308';
+    else timerBar.style.backgroundColor = '#ef4444';
+  }
+
+  /* ================= 遊戲核心邏輯 ================= */
   function updateCoinUI() {
     coinTotalEl.textContent = `${totalCoins}`;
   }
 
   function showDifficultyMenu() {
+    clearInterval(timerInterval);
     getAudioContext();
     modalBox.style.display = 'flex';
   }
@@ -703,16 +928,17 @@
 
     currentDifficulty = diff;
     currentRound = 1;
-    earnedCoinsThisRound = 0;
     lives = 3;
+    bossHp = 3;
+    comboCount = 0;
     isActionLocked = false;
 
     roundCount.textContent = `${currentRound}`;
     updateLivesUI();
-    playerBox.innerHTML = currentTheme === 'mario' ? SVGS.mario : SVGS.yugi;
-    enemyBox.innerHTML = currentTheme === 'mario' ? SVGS.goomba : SVGS.kuriboh;
+    renderHero();
 
     modalBox.style.display = 'none';
+    shopModal.style.display = 'none';
     lbModal.style.display = 'none';
     nextTurn();
   }
@@ -721,10 +947,29 @@
     livesDisplay.textContent = '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, 3 - lives));
   }
 
+  function updateEnemyVisual() {
+    if (currentRound === 5) {
+      // 魔王戰
+      enemyBox.innerHTML = currentTheme === 'mario' ? SVGS.bowser : SVGS.blueeyes;
+      bossHpWrap.style.display = 'flex';
+      bossHearts.textContent = '❤️'.repeat(bossHp);
+    } else {
+      bossHpWrap.style.display = 'none';
+      if (currentTheme === 'mario') {
+        const list = [SVGS.goomba, SVGS.koopa, SVGS.piranha];
+        enemyBox.innerHTML = list[(currentRound - 1) % list.length];
+      } else {
+        enemyBox.innerHTML = SVGS.kuriboh;
+      }
+    }
+  }
+
   function nextTurn() {
     isActionLocked = false;
     roundCount.textContent = `${currentRound}`;
-    
+    updateStatusBadges();
+    updateEnemyVisual();
+
     playerBox.classList.remove('player-stomp-anim');
     playerBox.classList.add('idle-anim');
 
@@ -741,65 +986,78 @@
       }
     }, 680);
 
-    let a = 0, b = 0, maxRange = 10;
+    generateQuestion();
+    startTimer();
+  }
+
+  function generateQuestion() {
+    let a = 0, b = 0, maxRange = 10, isPlus = Math.random() > 0.45;
+    let isFillBlank = Math.random() > 0.55; // 逆向未知數題型 (填空題)
 
     if (currentDifficulty === '10') {
-      const isPlus = Math.random() > 0.45;
       a = isPlus ? Math.floor(Math.random() * 6) : Math.floor(Math.random() * 10) + 1;
       b = isPlus ? Math.floor(Math.random() * (10 - a)) : Math.floor(Math.random() * (a + 1));
       maxRange = 10;
       correctAnswer = isPlus ? a + b : a - b;
-      qText.textContent = `${a} ${isPlus ? '+' : '-'} ${b} = ?`;
     } 
     else if (currentDifficulty === '100') {
-      const isPlus = Math.random() > 0.45;
       a = isPlus ? Math.floor(Math.random() * 50) + 10 : Math.floor(Math.random() * 60) + 20;
       b = isPlus ? Math.floor(Math.random() * (100 - a)) : Math.floor(Math.random() * (a - 5)) + 1;
       maxRange = 100;
       correctAnswer = isPlus ? a + b : a - b;
-      qText.textContent = `${a} ${isPlus ? '+' : '-'} ${b} = ?`;
     } 
     else if (currentDifficulty === '1000') {
-      const isPlus = Math.random() > 0.45;
       a = isPlus ? Math.floor(Math.random() * 450) + 50 : Math.floor(Math.random() * 500) + 200;
       b = isPlus ? Math.floor(Math.random() * (1000 - a)) : Math.floor(Math.random() * (a - 20)) + 10;
       maxRange = 1000;
       correctAnswer = isPlus ? a + b : a - b;
-      qText.textContent = `${a} ${isPlus ? '+' : '-'} ${b} = ?`;
     }
     else if (currentDifficulty === 'mul_2_5') {
       a = Math.floor(Math.random() * 4) + 2;
       b = Math.floor(Math.random() * 9) + 1;
       maxRange = 45;
       correctAnswer = a * b;
-      qText.textContent = `${a} × ${b} = ?`;
     }
     else if (currentDifficulty === 'mul_5_6') {
       a = Math.floor(Math.random() * 2) + 5;
       b = Math.floor(Math.random() * 9) + 1;
       maxRange = 54;
       correctAnswer = a * b;
-      qText.textContent = `${a} × ${b} = ?`;
     }
     else if (currentDifficulty === 'mul_2_9') {
       a = Math.floor(Math.random() * 8) + 2;
       b = Math.floor(Math.random() * 9) + 1;
       maxRange = 81;
       correctAnswer = a * b;
-      qText.textContent = `${a} × ${b} = ?`;
+    }
+
+    // 格式化題目（一般計算 或 未知數填空）
+    if (currentDifficulty.startsWith('mul_')) {
+      if (isFillBlank) {
+        qText.textContent = `${a} × ❓ = ${a * b}`;
+        correctAnswer = b;
+        maxRange = 10;
+      } else {
+        qText.textContent = `${a} × ${b} = ?`;
+      }
+    } else {
+      if (isFillBlank) {
+        if (isPlus) {
+          qText.textContent = `${a} + ❓ = ${a + b}`;
+          correctAnswer = b;
+        } else {
+          qText.textContent = `${a} - ❓ = ${a - b}`;
+          correctAnswer = b;
+        }
+      } else {
+        qText.textContent = `${a} ${isPlus ? '+' : '-'} ${b} = ?`;
+      }
     }
 
     const options = new Set([correctAnswer]);
     while (options.size < 4) {
-      let offset = 0;
-      if (currentDifficulty === '1000') {
-        offset = (Math.floor(Math.random() * 7) - 3) * 10;
-      } else if (currentDifficulty.startsWith('mul_')) {
-        offset = (Math.floor(Math.random() * 7) - 3) * (Math.random() > 0.5 ? a : 1);
-      } else {
-        offset = (Math.floor(Math.random() * 7) - 3);
-      }
-      
+      let offset = (Math.floor(Math.random() * 7) - 3);
+      if (currentDifficulty === '1000' && !isFillBlank) offset *= 10;
       const fake = correctAnswer + (offset === 0 ? 2 : offset);
       if (fake >= 0 && fake <= maxRange) options.add(fake);
       else options.add(Math.floor(Math.random() * maxRange));
@@ -815,27 +1073,34 @@
 
   function handleChoice(idx) {
     if (isActionLocked) return;
+    clearInterval(timerInterval);
     getAudioContext();
-    const chosen = parseInt(document.getElementById(`opt-${idx}`).dataset.val, 10);
+
+    const chosen = idx >= 0 ? parseInt(document.getElementById(`opt-${idx}`).dataset.val, 10) : -999;
 
     if (chosen === correctAnswer) {
       isActionLocked = true;
-      const rewards = {
-        "10": 5, "100": 15, "1000": 50,
-        "mul_2_5": 10, "mul_5_6": 15, "mul_2_9": 25
-      };
-      const reward = rewards[currentDifficulty] || 10;
+      comboCount++;
 
-      earnedCoinsThisRound += reward;
+      const baseRewards = { "10": 5, "100": 15, "1000": 50, "mul_2_5": 10, "mul_5_6": 15, "mul_2_9": 25 };
+      let reward = baseRewards[currentDifficulty] || 10;
+      
+      // 連擊獎勵與無敵星加成
+      if (comboCount > 1) reward += (comboCount * 2);
+      if (activeStar) {
+        reward *= 3;
+        activeStar = false;
+      }
+
       totalCoins += reward;
       localStorage.setItem('mario_total_coins', totalCoins);
       updateCoinUI();
+      updateStatusBadges();
       
       sndJump();
       playerBox.classList.remove('idle-anim');
       playerBox.classList.add('player-stomp-anim');
 
-      // 踩中打擊反饋（配合 0.55s 踩怪時刻）
       setTimeout(() => {
         sndStomp();
         sndCoin();
@@ -847,8 +1112,17 @@
         document.getElementById('battle-stage').appendChild(spark);
         setTimeout(() => spark.remove(), 320);
 
-        enemyBox.classList.remove('idle-anim', 'enemy-emerge-anim');
-        enemyBox.classList.add('enemy-squished');
+        if (currentRound === 5) {
+          bossHp--;
+          bossHearts.textContent = '❤️'.repeat(Math.max(0, bossHp));
+          if (bossHp <= 0) {
+            enemyBox.classList.remove('idle-anim', 'enemy-emerge-anim');
+            enemyBox.classList.add('enemy-squished');
+          }
+        } else {
+          enemyBox.classList.remove('idle-anim', 'enemy-emerge-anim');
+          enemyBox.classList.add('enemy-squished');
+        }
 
         const fx = document.createElement('div');
         fx.className = 'coin-fx';
@@ -859,12 +1133,13 @@
         setTimeout(() => fx.remove(), 650);
       }, 540);
 
-      // 完全著地後再進行換題或結算
       setTimeout(() => {
         playerBox.classList.remove('player-stomp-anim');
         playerBox.classList.add('idle-anim');
 
-        if (currentRound >= 5) {
+        if (currentRound === 5 && bossHp > 0) {
+          nextTurn(); // 魔王尚未擊敗，繼續出題
+        } else if (currentRound >= 5 && bossHp <= 0) {
           endBattle(true);
         } else {
           currentRound++;
@@ -873,6 +1148,19 @@
       }, 920);
 
     } else {
+      comboCount = 0;
+      updateStatusBadges();
+
+      if (activeShield) {
+        // 超級蘑菇抵擋傷害
+        activeShield = false;
+        updateStatusBadges();
+        sndPowerUp();
+        qText.textContent = "🛡️ 護盾抵擋！";
+        setTimeout(nextTurn, 800);
+        return;
+      }
+
       lives--;
       updateLivesUI();
       sndWrong();
@@ -885,6 +1173,8 @@
           sndGameOver();
         }, 120);
         setTimeout(() => endBattle(false), 2400);
+      } else {
+        setTimeout(nextTurn, 800);
       }
     }
   }
@@ -895,8 +1185,73 @@
     appEl.classList.add('screen-shake');
   }
 
+  /* ================= 商店與造型系統 ================= */
+  function openShop() {
+    clearInterval(timerInterval);
+    document.getElementById('shop-coin-display').textContent = totalCoins;
+    const skinBtn = document.getElementById('btn-skin-unlock');
+    if (unlockedSkins.includes('alt')) {
+      skinBtn.textContent = currentSkin === 'alt' ? "切換經典造型" : "切換升級造型";
+      skinBtn.disabled = false;
+    } else {
+      skinBtn.textContent = "解鎖 (100 幣)";
+    }
+    shopModal.style.display = 'flex';
+  }
+
+  function closeShop() {
+    shopModal.style.display = 'none';
+    if (!isActionLocked) startTimer();
+  }
+
+  function buyItem(type, price) {
+    if (totalCoins < price) {
+      alert("🪙 金幣不足！多通關賺取金幣吧！");
+      return;
+    }
+    totalCoins -= price;
+    localStorage.setItem('mario_total_coins', totalCoins);
+    updateCoinUI();
+    document.getElementById('shop-coin-display').textContent = totalCoins;
+    sndPowerUp();
+
+    if (type === 'shield') activeShield = true;
+    else if (type === 'star') activeStar = true;
+    else if (type === 'clock') extraTimeAdded += 5;
+
+    updateStatusBadges();
+    alert("🎉 購買成功！道具已生效！");
+  }
+
+  function buySkin(price) {
+    if (unlockedSkins.includes('alt')) {
+      currentSkin = currentSkin === 'alt' ? 'default' : 'alt';
+      localStorage.setItem('mario_current_skin', currentSkin);
+      renderHero();
+      openShop();
+      return;
+    }
+    if (totalCoins < price) {
+      alert("🪙 金幣不足！");
+      return;
+    }
+    totalCoins -= price;
+    unlockedSkins.push('alt');
+    currentSkin = 'alt';
+    localStorage.setItem('mario_total_coins', totalCoins);
+    localStorage.setItem('mario_unlocked_skins', JSON.stringify(unlockedSkins));
+    localStorage.setItem('mario_current_skin', currentSkin);
+    updateCoinUI();
+    renderHero();
+    sndPowerUp();
+    alert("🎉 恭喜解鎖全新專屬造型！");
+    openShop();
+  }
+
+  /* ================= 排行榜與結算 ================= */
   function endBattle(isWin) {
-    const name = prompt(isWin ? "🎉 恭喜通關！請輸入名字紀錄戰績：" : "💀 遊戲結束！請輸入名字：", "冒險高手") || "英雄";
+    clearInterval(timerInterval);
+    const name = prompt(isWin ? "🎉 恭喜擊敗 BOSS 通關！請輸入名字紀錄戰績：" : "💀 遊戲結束！請輸入名字：", "冒險高手") || "英雄";
     saveScore(name, totalCoins, currentDifficulty);
     openLeaderboard();
   }
@@ -913,6 +1268,7 @@
   }
 
   function openLeaderboard() {
+    clearInterval(timerInterval);
     getAudioContext();
     const list = JSON.parse(localStorage.getItem('mario_lb') || '[]');
     const tbody = document.getElementById('lb-body');
@@ -943,7 +1299,7 @@
   });
 
   updateCoinUI();
-  playerBox.innerHTML = SVGS.mario;
+  renderHero();
   enemyBox.innerHTML = SVGS.goomba;
 </script>
 </body>
