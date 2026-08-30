@@ -37,6 +37,12 @@
     border: 6px solid #000000;
     box-shadow: 0 10px 0 #000000;
     overflow: hidden;
+    transition: background 0.5s ease;
+  }
+
+  /* Boss 關卡背景切換為地下城堡暗色系 */
+  #game-app.boss-theme {
+    background: #1e1b4b;
   }
 
   .screen-shake {
@@ -75,7 +81,6 @@
   }
   .btn-top:active { transform: translateY(2px); }
 
-  /* 倒數計時條 */
   #timer-bar-wrap {
     width: 100%;
     height: 8px;
@@ -110,6 +115,10 @@
     opacity: 0.85;
     animation: cloudMove 25s linear infinite;
     z-index: 1;
+    transition: opacity 0.5s;
+  }
+  .boss-theme .clouds-layer {
+    opacity: 0.2;
   }
   @keyframes cloudMove {
     0% { transform: translateX(0); }
@@ -125,7 +134,6 @@
     pointer-events: none;
   }
 
-  /* 題目大方塊：大字體設計 */
   .question-block {
     position: absolute;
     top: 12px;
@@ -140,19 +148,25 @@
     animation: floatBlock 2.2s infinite ease-in-out;
     z-index: 25;
   }
+  .boss-theme .question-block {
+    background: #ea580c;
+    box-shadow: inset -4px -4px 0 #7c2d12, inset 4px 4px 0 #fdba74, 0 5px 0 rgba(0,0,0,0.5);
+  }
   @keyframes floatBlock {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-4px); }
   }
 
   .q-math {
-    font-size: 32px;
+    font-size: 34px;
     font-weight: 700;
     color: #1e1b4b;
     letter-spacing: 2px;
   }
+  .boss-theme .q-math {
+    color: #ffffff;
+  }
 
-  /* 提示標籤與道具狀態 */
   #status-indicator {
     position: absolute;
     top: 88px;
@@ -172,7 +186,6 @@
     border: 1.5px solid #ffd700;
   }
 
-  /* Boss 血條面板 */
   #boss-hp-wrap {
     position: absolute;
     top: 115px;
@@ -182,10 +195,9 @@
     align-items: flex-end;
     z-index: 26;
   }
-  .boss-label { font-size: 11px; color: #ef4444; font-weight: 700; margin-bottom: 2px; }
+  .boss-label { font-size: 11px; color: #ef4444; font-weight: 700; margin-bottom: 2px; text-shadow: 1px 1px #000; }
   .boss-hearts { font-size: 14px; }
 
-  /* 地面與水管 */
   .ground {
     position: absolute;
     bottom: 0;
@@ -195,6 +207,9 @@
     background: repeating-linear-gradient(45deg, #c84c0c, #c84c0c 12px, #000 12px, #000 14px, #fc9838 14px, #fc9838 24px);
     border-top: 4px solid #000;
     z-index: 10;
+  }
+  .boss-theme .ground {
+    background: repeating-linear-gradient(45deg, #475569, #475569 12px, #000 12px, #000 14px, #94a3b8 14px, #94a3b8 24px);
   }
 
   .pipe {
@@ -219,8 +234,15 @@
     border: 4px solid #000;
     box-shadow: inset 6px 0 0 #54f054, inset -6px 0 0 #005400;
   }
+  .boss-theme .pipe {
+    background: #334155;
+    box-shadow: inset 6px 0 0 #64748b, inset -6px 0 0 #0f172a;
+  }
+  .boss-theme .pipe::before {
+    background: #334155;
+    box-shadow: inset 6px 0 0 #64748b, inset -6px 0 0 #0f172a;
+  }
 
-  /* 角色與怪物精準座標 */
   #player-box {
     position: absolute;
     left: 28px;
@@ -297,7 +319,6 @@
     100% { transform: scale(1.4) rotate(45deg); opacity: 0; }
   }
 
-  /* 選擇按鈕大字體與加高設計 */
   #options-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -420,7 +441,7 @@
 <div id="game-app">
   <div id="header">
     <div>🪙 <span id="coin-total">0</span></div>
-    <div>RD <span id="round-count">1</span>/5</div>
+    <div>RD <span id="round-count">1</span>/10</div>
     <div><span id="lives-display">❤️❤️❤️</span></div>
     <button class="btn-top" onclick="openShop()">🏪 商店</button>
     <button class="btn-top" id="bgm-toggle-btn" onclick="toggleBGM()">🎵 ON</button>
@@ -444,7 +465,7 @@
     </div>
 
     <div class="question-block">
-      <div class="q-math" id="q-text">-- + --</div>
+      <div class="q-math" id="q-text">-- + -- = ?</div>
     </div>
 
     <div id="status-indicator"></div>
@@ -513,7 +534,7 @@
   <div id="lb-modal" class="modal-screen" style="display:none;">
     <h1 class="modal-title">🏆 TOP 10 冒險英雄榜</h1>
     <table class="lb-table">
-      <thead><tr><th>#</th><th>玩家</th><th>金幣</th><th>模式</th></tr></thead>
+      <thead><tr><th>#</th><th>闖關模式</th><th>累積金幣</th><th>狀態</th></tr></thead>
       <tbody id="lb-body"></tbody>
     </table>
     <button class="mode-btn" style="background:#dc2626;" onclick="closeLeaderboard()">關閉</button>
@@ -622,6 +643,7 @@
 
   let currentDifficulty = '10';
   let currentRound = 1;
+  const TOTAL_ROUNDS = 10; // 改為 10 道題
   let lives = 3;
   let bossHp = 3;
   let correctAnswer = 0;
@@ -636,6 +658,10 @@
   const bgmAudio = new Audio('bgm.mp3');
   bgmAudio.loop = true;
   bgmAudio.volume = 0.55;
+
+  const bossAudio = new Audio('boss.mp3'); // Boss 戰專屬音樂
+  bossAudio.loop = true;
+  bossAudio.volume = 0.6;
 
   const gameOverAudio = new Audio('gameover.mp3');
   gameOverAudio.volume = 0.75;
@@ -695,10 +721,20 @@
     });
   }
 
-  function startBGM() {
-    if (isBGMEnabled) {
-      bgmAudio.currentTime = 0;
-      bgmAudio.play().catch(e => console.log('等待互動'));
+  /* 音樂動態切換：一般關卡播 bgm.mp3，Boss 關卡播 boss.mp3 */
+  function updateBGMState() {
+    if (!isBGMEnabled) {
+      bgmAudio.pause();
+      bossAudio.pause();
+      return;
+    }
+    if (currentRound === TOTAL_ROUNDS) {
+      bgmAudio.pause();
+      bossAudio.play().catch(e => console.log('Boss 音樂待點擊'));
+    } else {
+      bossAudio.pause();
+      bossAudio.currentTime = 0;
+      bgmAudio.play().catch(e => console.log('BGM 待點擊'));
     }
   }
 
@@ -708,11 +744,12 @@
     if (isBGMEnabled) {
       btn.textContent = '🎵 ON';
       btn.style.background = '#f59e0b';
-      bgmAudio.play();
+      updateBGMState();
     } else {
       btn.textContent = '🔇 OFF';
       btn.style.background = '#64748b';
       bgmAudio.pause();
+      bossAudio.pause();
     }
   }
 
@@ -784,7 +821,6 @@
 
   function startBattle(diff) {
     getAudioContext();
-    startBGM();
 
     currentDifficulty = diff;
     currentRound = 1;
@@ -797,6 +833,8 @@
     updateLivesUI();
     renderHero();
 
+    updateBGMState();
+
     modalBox.style.display = 'none';
     shopModal.style.display = 'none';
     lbModal.style.display = 'none';
@@ -808,11 +846,13 @@
   }
 
   function updateEnemyVisual() {
-    if (currentRound === 5) {
+    if (currentRound === TOTAL_ROUNDS) {
+      appEl.classList.add('boss-theme');
       enemyBox.innerHTML = SVGS.bowser;
       bossHpWrap.style.display = 'flex';
       bossHearts.textContent = '❤️'.repeat(bossHp);
     } else {
+      appEl.classList.remove('boss-theme');
       bossHpWrap.style.display = 'none';
       const list = [SVGS.goomba, SVGS.koopa, SVGS.piranha];
       enemyBox.innerHTML = list[(currentRound - 1) % list.length];
@@ -824,6 +864,7 @@
     roundCount.textContent = `${currentRound}`;
     updateStatusBadges();
     updateEnemyVisual();
+    updateBGMState();
 
     playerBox.classList.remove('player-stomp-anim');
     playerBox.classList.add('idle-anim');
@@ -847,71 +888,54 @@
 
   function generateQuestion() {
     let a = 0, b = 0, maxRange = 10, isPlus = Math.random() > 0.45;
-    let isFillBlank = Math.random() > 0.55;
 
     if (currentDifficulty === '10') {
       a = isPlus ? Math.floor(Math.random() * 6) : Math.floor(Math.random() * 10) + 1;
       b = isPlus ? Math.floor(Math.random() * (10 - a)) : Math.floor(Math.random() * (a + 1));
       maxRange = 10;
       correctAnswer = isPlus ? a + b : a - b;
+      qText.textContent = `${a} ${isPlus ? '+' : '-'} ${b} = ?`;
     } 
     else if (currentDifficulty === '100') {
       a = isPlus ? Math.floor(Math.random() * 50) + 10 : Math.floor(Math.random() * 60) + 20;
       b = isPlus ? Math.floor(Math.random() * (100 - a)) : Math.floor(Math.random() * (a - 5)) + 1;
       maxRange = 100;
       correctAnswer = isPlus ? a + b : a - b;
+      qText.textContent = `${a} ${isPlus ? '+' : '-'} ${b} = ?`;
     } 
     else if (currentDifficulty === '1000') {
       a = isPlus ? Math.floor(Math.random() * 450) + 50 : Math.floor(Math.random() * 500) + 200;
       b = isPlus ? Math.floor(Math.random() * (1000 - a)) : Math.floor(Math.random() * (a - 20)) + 10;
       maxRange = 1000;
       correctAnswer = isPlus ? a + b : a - b;
+      qText.textContent = `${a} ${isPlus ? '+' : '-'} ${b} = ?`;
     }
     else if (currentDifficulty === 'mul_2_5') {
       a = Math.floor(Math.random() * 4) + 2;
       b = Math.floor(Math.random() * 9) + 1;
       maxRange = 45;
       correctAnswer = a * b;
+      qText.textContent = `${a} × ${b} = ?`;
     }
     else if (currentDifficulty === 'mul_5_6') {
       a = Math.floor(Math.random() * 2) + 5;
       b = Math.floor(Math.random() * 9) + 1;
       maxRange = 54;
       correctAnswer = a * b;
+      qText.textContent = `${a} × ${b} = ?`;
     }
     else if (currentDifficulty === 'mul_2_9') {
       a = Math.floor(Math.random() * 8) + 2;
       b = Math.floor(Math.random() * 9) + 1;
       maxRange = 81;
       correctAnswer = a * b;
-    }
-
-    if (currentDifficulty.startsWith('mul_')) {
-      if (isFillBlank) {
-        qText.textContent = `${a} × ❓ = ${a * b}`;
-        correctAnswer = b;
-        maxRange = 10;
-      } else {
-        qText.textContent = `${a} × ${b} = ?`;
-      }
-    } else {
-      if (isFillBlank) {
-        if (isPlus) {
-          qText.textContent = `${a} + ❓ = ${a + b}`;
-          correctAnswer = b;
-        } else {
-          qText.textContent = `${a} - ❓ = ${a - b}`;
-          correctAnswer = b;
-        }
-      } else {
-        qText.textContent = `${a} ${isPlus ? '+' : '-'} ${b} = ?`;
-      }
+      qText.textContent = `${a} × ${b} = ?`;
     }
 
     const options = new Set([correctAnswer]);
     while (options.size < 4) {
       let offset = (Math.floor(Math.random() * 7) - 3);
-      if (currentDifficulty === '1000' && !isFillBlank) offset *= 10;
+      if (currentDifficulty === '1000') offset *= 10;
       const fake = correctAnswer + (offset === 0 ? 2 : offset);
       if (fake >= 0 && fake <= maxRange) options.add(fake);
       else options.add(Math.floor(Math.random() * maxRange));
@@ -965,7 +989,7 @@
         document.getElementById('battle-stage').appendChild(spark);
         setTimeout(() => spark.remove(), 320);
 
-        if (currentRound === 5) {
+        if (currentRound === TOTAL_ROUNDS) {
           bossHp--;
           bossHearts.textContent = '❤️'.repeat(Math.max(0, bossHp));
           if (bossHp <= 0) {
@@ -990,9 +1014,9 @@
         playerBox.classList.remove('player-stomp-anim');
         playerBox.classList.add('idle-anim');
 
-        if (currentRound === 5 && bossHp > 0) {
+        if (currentRound === TOTAL_ROUNDS && bossHp > 0) {
           nextTurn();
-        } else if (currentRound >= 5 && bossHp <= 0) {
+        } else if (currentRound >= TOTAL_ROUNDS && bossHp <= 0) {
           endBattle(true);
         } else {
           currentRound++;
@@ -1021,10 +1045,11 @@
       if (lives <= 0) {
         isActionLocked = true;
         bgmAudio.pause();
+        bossAudio.pause();
         setTimeout(() => {
           sndGameOver();
         }, 120);
-        setTimeout(() => endBattle(false), 2400);
+        endBattle(false);
       } else {
         setTimeout(nextTurn, 800);
       }
@@ -1100,22 +1125,34 @@
     openShop();
   }
 
-  /* ================= 排行榜與結算 ================= */
+  /* ================= 自動重啟與紀錄系統 ================= */
   function endBattle(isWin) {
     clearInterval(timerInterval);
-    const name = prompt(isWin ? "🎉 恭喜擊敗 庫巴魔王 通關！請輸入名字紀錄戰績：" : "💀 遊戲結束！請輸入名字：", "瑪利歐小英雄") || "小英雄";
-    saveScore(name, totalCoins, currentDifficulty);
-    openLeaderboard();
+    isActionLocked = true;
+    
+    saveScore(totalCoins, currentDifficulty, isWin);
+
+    qText.textContent = isWin ? "🏆 通關成功！" : "💀 再接再厲！";
+    for (let i = 0; i < 4; i++) {
+      document.getElementById(`opt-${i}`).textContent = "-";
+    }
+
+    setTimeout(() => {
+      startBattle(currentDifficulty);
+    }, 2500);
   }
 
-  function saveScore(name, coins, mode) {
+  function saveScore(coins, mode, isWin) {
     const modeNames = {
       "10": "10加減", "100": "100加減", "1000": "1000加減",
       "mul_2_5": "2-5乘法", "mul_5_6": "5-6乘法", "mul_2_9": "2-9乘法"
     };
     const list = JSON.parse(localStorage.getItem('mario_lb') || '[]');
-    list.push({ name, coins, mode: modeNames[mode] || "冒險" });
-    list.sort((a, b) => b.coins - a.coins);
+    list.unshift({
+      mode: modeNames[mode] || "冒險",
+      coins: coins,
+      status: isWin ? "通關 🏆" : "挑戰 💥"
+    });
     localStorage.setItem('mario_lb', JSON.stringify(list.slice(0, 10)));
   }
 
@@ -1130,9 +1167,9 @@
       tbody.innerHTML = list.map((item, idx) => `
         <tr>
           <td style="color:#fde047;">${idx + 1}</td>
-          <td>${item.name}</td>
-          <td>🪙 ${item.coins}</td>
           <td>${item.mode || '-'}</td>
+          <td>🪙 ${item.coins}</td>
+          <td>${item.status || '-'}</td>
         </tr>
       `).join('');
     }
@@ -1141,6 +1178,7 @@
 
   function closeLeaderboard() {
     lbModal.style.display = 'none';
+    if (!isActionLocked) startTimer();
   }
 
   window.addEventListener('keydown', (e) => {
